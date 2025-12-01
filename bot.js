@@ -54,7 +54,7 @@ async function getWeatherByCoords(lat, lon) {
   const place = await getPlaceName(lat, lon);
 
   return (
-    `🌤 Погода: ${place}\n` +
+    `🌤 Weather: ${place}\n` +
     `🌡 Температура: ${t.toFixed(1)}°C\n` +
     `💧 Влажность: ${h}%\n` +
     `💨 Ветер: ${w} м/с`
