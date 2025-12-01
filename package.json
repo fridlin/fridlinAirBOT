@@ -2,10 +2,10 @@
   "name": "nodejs-starter",
   "version": "1.0.0",
   "description": "A simple Node.js starter project",
-  "main": "index.js",
+  "main": "src/bot.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node src/bot.js",
+    "dev": "node --watch src/bot.js"
   },
   "keywords": [
     "nodejs",

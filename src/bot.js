@@ -1,65 +1,12 @@
 // FridlinAir – погода по геолокации с подтверждением
 
+// src/bot.js
 const { Telegraf } = require("telegraf");
-const axios = require("axios");
-
-const bot = new Telegraf(process.env.BOT_TOKEN);
+const { getWeatherByCoords } = require("./services/weather");
 
 // простое хранилище последних координат по пользователю
+const bot = new Telegraf(process.env.BOT_TOKEN);
 const lastLocation = {};
-
-// вывод названия места
-// вывод названия места
-async function getPlaceName(lat, lon) {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json`;
-
-  const { data } = await axios.get(url, {
-    params: {
-      latlng: `${lat},${lon}`,
-      key: process.env.GOOGLE_KEY,
-      language: "en",
-    },
-  });
-
-  if (data.results && data.results.length > 0) {
-    const components = data.results[0].address_components;
-
-    const city =
-      components.find((c) => c.types.includes("locality"))?.long_name ||
-      components.find((c) => c.types.includes("administrative_area_level_2"))
-        ?.long_name ||
-      components.find((c) => c.types.includes("administrative_area_level_1"))
-        ?.long_name;
-
-    return city || "This place";
-  }
-
-  return "This place";
-}
-
-// ======== вспомогательная функция погоды по координатам ========
-async function getWeatherByCoords(lat, lon) {
-  const url =
-    `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${lat}&longitude=${lon}` +
-    `&hourly=temperature_2m,relativehumidity_2m,windspeed_10m` +
-    `&timezone=auto`;
-
-  const { data } = await axios.get(url);
-
-  // для простоты берём ближайший час
-  const t = data.hourly.temperature_2m[0];
-  const h = data.hourly.relativehumidity_2m[0];
-  const w = data.hourly.windspeed_10m[0];
-  const place = await getPlaceName(lat, lon);
-
-  return (
-    `🌤 Weather: ${place}\n` +
-    `🌡 Температура: ${t.toFixed(1)}°C\n` +
-    `💧 Влажность: ${h}%\n` +
-    `💨 Ветер: ${w} м/с`
-  );
-}
 
 // =================== команды бота ===================
 
