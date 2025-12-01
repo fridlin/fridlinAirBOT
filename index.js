@@ -1,10 +1,10 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="en">
@@ -56,10 +56,13 @@ app.get('/', (req, res) => {
   `);
 });
 
-app.get('/api/hello', (req, res) => {
-  res.json({ message: 'Hello from Node.js!', timestamp: new Date().toISOString() });
+app.get("/api/hello", (req, res) => {
+  res.json({
+    message: "Hello from Node.js!",
+    timestamp: new Date().toISOString(),
+  });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
