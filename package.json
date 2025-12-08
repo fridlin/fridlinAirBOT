@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/bot.js",
     "dev": "node --watch src/bot.js",
-    "postversion": "echo $npm_package_version > VERSION"
+    "postversion": "echo $npm_package_version > VERSION && node scripts/generate-readme.js"
   },
   "keywords": [
     "nodejs",
