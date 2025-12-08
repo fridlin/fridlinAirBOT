@@ -1,6 +1,6 @@
 {
   "name": "nodejs-starter",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "A simple Node.js starter project",
   "main": "src/bot.js",
   "scripts": {
@@ -14,7 +14,8 @@
     "changelog": "standard-version --release-as",
     "changelog:patch": "standard-version --skip.tag --skip.commit --skip.bump",
     "changelog:minor": "standard-version --skip.tag --skip.commit --skip.bump",
-    "changelog:major": "standard-version --skip.tag --skip.commit --skip.bump"
+    "changelog:major": "standard-version --skip.tag --skip.commit --skip.bump",
+    "standard-version": "^9.5.0"
   },
   "keywords": [
     "nodejs",
