@@ -12,9 +12,9 @@
     "postversion": "echo $npm_package_version > VERSION && node scripts/generate-readme.js",
     "release": "node scripts/release.js",
     "changelog": "standard-version --release-as",
-    "changelog:patch": "standard-version --release-as patch --skip.tag --skip.commit",
-    "changelog:minor": "standard-version --release-as minor --skip.tag --skip.commit",
-    "changelog:major": "standard-version --release-as major --skip.tag --skip.commit"
+    "changelog:patch": "standard-version --skip.tag --skip.commit --skip.bump",
+    "changelog:minor": "standard-version --skip.tag --skip.commit --skip.bump",
+    "changelog:major": "standard-version --skip.tag --skip.commit --skip.bump"
   },
   "keywords": [
     "nodejs",
