@@ -5,7 +5,8 @@
   "main": "src/bot.js",
   "scripts": {
     "start": "node src/bot.js",
-    "dev": "node --watch src/bot.js"
+    "dev": "node --watch src/bot.js",
+    "postversion": "echo $npm_package_version > VERSION"
   },
   "keywords": [
     "nodejs",
