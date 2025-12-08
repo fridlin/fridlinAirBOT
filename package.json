@@ -1,6 +1,6 @@
 {
   "name": "nodejs-starter",
-  "version": "2.0.2",
+  "version": "2.0.4",
   "description": "A simple Node.js starter project",
   "main": "src/bot.js",
   "scripts": {
@@ -10,7 +10,11 @@
     "bump:minor": "npm version minor --no-git-tag-version",
     "bump:major": "npm version major --no-git-tag-version",
     "postversion": "echo $npm_package_version > VERSION && node scripts/generate-readme.js",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "changelog": "standard-version --release-as",
+    "changelog:patch": "standard-version --release-as patch --skip.tag --skip.commit",
+    "changelog:minor": "standard-version --release-as minor --skip.tag --skip.commit",
+    "changelog:major": "standard-version --release-as major --skip.tag --skip.commit"
   },
   "keywords": [
     "nodejs",
@@ -24,5 +28,8 @@
     "express": "^4.18.2",
     "telegraf": "^4.16.3",
     "tz-lookup": "^6.1.25"
+  },
+  "devDependencies": {
+    "standard-version": "^9.5.0"
   }
 }

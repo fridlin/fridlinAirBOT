@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
 
 function run(cmd) {
   console.log(`> ${cmd}`);
@@ -14,25 +16,30 @@ if (!["patch", "minor", "major"].includes(type)) {
   process.exit(1);
 }
 
-// 1. Обновляем версию без коммита и тега
+// 1. Bump версии БЕЗ коммита и БЕЗ тега
 run(`npm version ${type} --no-git-tag-version`);
 
-// 2. Обновляем VERSION и README
-run(`echo $npm_package_version > VERSION`);
-run(`node scripts/generate-readme.js`);
-
-// 3. Читаем новую версию
+// 2. Читаем новую версию
 const pkg = require("../package.json");
 const version = pkg.version;
 
-// 4. Один единый коммит
+// 3. Обновляем VERSION
+fs.writeFileSync(path.join(__dirname, "..", "VERSION"), version);
+
+// 4. Генерируем README
+run(`node scripts/generate-readme.js`);
+
+// 5. Генерируем CHANGELOG (один раз!)
+run(`npm run changelog:${type}`);
+
+// 6. Один релизный коммит
 run(`git add .`);
 run(`git commit -m "release: v${version}"`);
 
-// 5. Создаём тег
+// 7. Создаём тег
 run(`git tag v${version}`);
 
-// 6. Отправляем на GitHub
+// 8. Пушим изменения и тег
 run(`git push`);
 run(`git push --tags`);
 
