@@ -1,11 +1,14 @@
 {
   "name": "nodejs-starter",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "A simple Node.js starter project",
   "main": "src/bot.js",
   "scripts": {
     "start": "node src/bot.js",
     "dev": "node --watch src/bot.js",
+    "bump:patch": "npm version patch --no-git-tag-version",
+    "bump:minor": "npm version minor --no-git-tag-version",
+    "bump:major": "npm version major --no-git-tag-version",
     "postversion": "echo $npm_package_version > VERSION && node scripts/generate-readme.js"
   },
   "keywords": [
