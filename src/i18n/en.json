@@ -1,0 +1,14 @@
+{
+  "start": "Welcome to FridlinAirBOT!",
+  "askLocation": "Please send your location.",
+  "route_start": "Send the starting point.",
+  "route_end": "Send the destination point.",
+  "feedback_request": "✉️ Please write your feedback in a single message.",
+  "feedback_sent": "Thank you! Your message has been forwarded to the developer.",
+  "lang_choose": "Choose your language:",
+
+  "menu_weather": "Weather now",
+  "menu_route": "Route",
+  "menu_feedback": "Feedback",
+  "menu_lang": "Language"
+}

@@ -1,88 +1,77 @@
 const fs = require("fs");
 const path = require("path");
 
+// Пути
+const templatePath = path.join(__dirname, "README.template.md");
+const outputPath = path.join(__dirname, "..", "README.md");
+
+// 1. Загружаем шаблон
+let template = fs.readFileSync(templatePath, "utf8");
+
+// 2. Получаем версию
 const pkg = require("../package.json");
+template = template.replace(/{{VERSION}}/g, pkg.version);
 
-// Список команд
-const commands = [
-  { cmd: "/start", desc: "Запускает бота" },
-  { cmd: "/micro", desc: "Быстрый микропрогноз" },
-  { cmd: "/debug", desc: "Главная точка входа для отладки (только admin)" },
-  { cmd: "/debug_micro", desc: "Отладка микропрогноза" },
-  { cmd: "/debug_micro_full", desc: "Полный вывод микросеток" },
-  { cmd: "/debug_micro_grid", desc: "Показать сетку точек" },
-  { cmd: "/debug_time", desc: "Анализ времени обновления" },
-];
+// 3. Команды
+const commandTree = require("../src/config/commandTree");
+const cmds = commandTree.commands
+  .map((c) => `/${c.command} — ${c.description}`)
+  .join("\n");
 
-// Параметры, которые у нас есть сейчас
-const params = [
-  { key: "radiusStart", value: "2 km" },
-  { key: "radiusEnd", value: "5 km" },
-  { key: "model", value: "micro-weather grid" },
-];
+template = template.replace(/{{COMMANDS}}/g, cmds);
 
-const debugCommands = commands.filter((c) => c.cmd.startsWith("/debug"));
-
-const readmeContent = `
-# FridlinAirBOT
-
-**Погодный бот с микропрогнозом по координатам.**  
-Версия: **${pkg.version}**  
-Автообновление README при каждой команде \`npm version\`.
-
----
-
-## ⚡ Основные команды
-
-${commands
-  .filter((c) => !c.cmd.startsWith("/debug"))
-  .map((c) => `- **${c.cmd}** — ${c.desc}`)
-  .join("\n")}
-
----
-
-## 🛠 Debug-режимы (только для @fridlins)
-
-${debugCommands.map((c) => `- **${c.cmd}** — ${c.desc}`).join("\n")}
-
----
-
-## 🔧 Текущие параметры
-
-${params.map((p) => `- **${p.key}:** ${p.value}`).join("\n")}
-
----
-
-## 🗂 Структура проекта
-
-- **src/bot.js** — основной бот
-- **src/commands/** — команды
-- **src/services/** — работа с погодными данными
-- **src/debug/** — режимы отладки
-- **src/utils/** — парсеры, хранилища, вспомогательные модули
-
----
-
-## 🚀 Автогенерация README
-
-README генерируется автоматически при выполнении:
-
-\`\`\`
-npm version patch
-\`\`\`
-
-или:
-
-\`\`\`
-npm version minor
-\`\`\`
-
-Скрипт перезаписывает README.md и обновляет версию.
+// 4. Debug-команды
+const debugCommands = `
+/debug — главный debug режим
+/debug_micro — микропрогноз
+/debug_micro_full — полная сетка
+/debug_micro_grid — отображение точек
+/debug_time — время обновления
 `;
 
-fs.writeFileSync(
-  path.join(__dirname, "..", "README.md"),
-  readmeContent.trim() + "\n",
-);
+template = template.replace(/{{DEBUG_COMMANDS}}/g, debugCommands);
 
-console.log("README.md успешно обновлён");
+// 5. Параметры
+const params = `
+radiusStart: 2 km  
+radiusEnd: 5 km  
+model: micro-weather grid  
+`;
+
+template = template.replace(/{{PARAMS}}/g, params);
+
+// 6. Дерево папок
+function getTree(dir, prefix = "") {
+  const blacklist = ["node_modules", ".git", "__pycache__", ".DS_Store"];
+
+  let result = "";
+
+  const files = fs.readdirSync(dir).filter((f) => !blacklist.includes(f));
+
+  for (const f of files) {
+    const full = path.join(dir, f);
+
+    let isDir = false;
+    try {
+      isDir = fs.statSync(full).isDirectory();
+    } catch {
+      continue;
+    }
+
+    result += prefix + f + (isDir ? "/\n" : "\n");
+
+    if (isDir) {
+      result += getTree(full, prefix + "  ");
+    }
+  }
+
+  return result;
+}
+
+const tree = getTree(path.join(__dirname, "..", "src"));
+template = template.replace(/{{TREE}}/g, tree);
+
+// 7. Записываем README
+fs.writeFileSync(outputPath, template);
+
+console.log("README.md успешно сгенерирован по шаблону!");

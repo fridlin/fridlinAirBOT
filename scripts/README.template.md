@@ -1,6 +1,6 @@
 # FridlinAirBOT  
 Погодный бот с микропрогнозом по координатам.  
-Версия: 2.0.5
+Версия: {{VERSION}}
 
 README обновляется автоматически при каждом релизе.
 
@@ -20,33 +20,19 @@ README обновляется автоматически при каждом р�
 
 ## 🧭 Команды
 
-/start — Запуск бота
-/micro — Быстрый микропрогноз
-/route — Микропрогноз по маршруту
-/feedback — Оставить отзыв или предложение
-/lang — Выбрать язык
+{{COMMANDS}}
 
 ---
 
 ## 🛠 Debug (только для админа)
 
-
-/debug — главный debug режим
-/debug_micro — микропрогноз
-/debug_micro_full — полная сетка
-/debug_micro_grid — отображение точек
-/debug_time — время обновления
-
+{{DEBUG_COMMANDS}}
 
 ---
 
 ## 🔧 Текущие параметры модели
 
-
-radiusStart: 2 km  
-radiusEnd: 5 km  
-model: micro-weather grid  
-
+{{PARAMS}}
 
 ---
 
@@ -85,46 +71,7 @@ t(ctx, "key")
 
 ## 🗂 Структура проекта
 
-bot.js
-commands/
-  debug.js
-  debug_micro.js
-  debug_micro_full.js
-  debug_micro_grid.js
-  debug_reset.js
-  debug_time.js
-  feedback.js
-  here.js
-  micro.js
-  start.js
-config/
-  commandTree.js
-  lang.js
-debug/
-  debug_micro_full_runner.js
-  debug_micro_grid_runner.js
-  debug_micro_runner.js
-  debug_time_runner.js
-handlers/
-  buttons.js
-i18n/
-  en.json
-  ru.json
-middleware/
-  session.js
-services/
-  geoGrid.js
-  geocode.js
-  weather.js
-  weatherMicro.js
-  weatherMicroRaw.js
-utils/
-  coordParser.js
-  debugState.js
-  i18n.js
-  logger.js
-  userStore.js
-
+{{TREE}}
 
 ---
 
