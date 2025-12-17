@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.0.6](https://github.com/fridlin/fridlinAirBOT/compare/v2.0.5...v2.0.6) (2025-12-17)
+
+
+### Bug Fixes
+
+* unify commands tree, fix buttons, update README template ([8ff470c](https://github.com/fridlin/fridlinAirBOT/commit/8ff470cc773b749fccdb359133777b22427e847b))
+
 ### [2.0.5](https://github.com/fridlin/fridlinAirBOT/compare/v2.0.3...v2.0.5) (2025-12-08)
 
 
