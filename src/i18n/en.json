@@ -1,14 +1,30 @@
 {
-  "start": "Welcome to FridlinAirBOT!",
-  "askLocation": "Please send your location.",
-  "route_start": "Send the starting point.",
-  "route_end": "Send the destination point.",
-  "feedback_request": "✉️ Please write your feedback in a single message.",
-  "feedback_sent": "Thank you! Your message has been forwarded to the developer.",
-  "lang_choose": "Choose your language:",
+  "askLocation": "Please send your location",
+  "calculating_micro": "Calculating micro forecast…",
+  "timezone_error": "Unable to determine timezone",
+  "forecast_error": "Unable to get weather forecast",
 
-  "menu_weather": "Weather now",
-  "menu_route": "Route",
-  "menu_feedback": "Feedback",
-  "menu_lang": "Language"
+  "micro_title": "Micro forecast",
+  "micro_subtitle": "Weather around you for the next hours",
+  "micro_area_note": "Analysis area: ~2×2 km",
+  "timezone_label": "Timezone",
+
+  "warning": {
+    "title": "Weather warning",
+    "severe_title": "Severe weather warning",
+    "reasons": {
+      "feels_like_now": "Feels different than actual temperature",
+      "feels_like_future": "Feels like will change soon",
+
+      "wind_now": "Strong wind now",
+      "wind_future": "Wind will increase soon",
+
+      "humidity_low": "Low humidity now",
+      "humidity_high": "High humidity now",
+      "humidity_future": "Humidity will change soon",
+
+      "rain_now": "Rain now — umbrella recommended",
+      "rain_future": "Rain expected soon"
+    }
+  }
 }

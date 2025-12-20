@@ -3,6 +3,10 @@
 const { Telegraf, Markup } = require("telegraf");
 const session = require("./middleware/session");
 
+const { checkWarnings } = require("./warnings/checkWarnings");
+const { formatWarning } = require("./warnings/formatWarning");
+
+
 // === BOT INSTANCE ===
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -40,6 +44,8 @@ bot.use(async (ctx, next) => {
 const userStore = require("./utils/userStore");
 const commandTree = require("./config/commandTree");
 
+bot.telegram.setMyCommands(commandTree.commands.public);
+
 // === FEEDBACK ===
 const feedbackCommand = require("./commands/feedback");
 
@@ -65,7 +71,7 @@ const lastLocation = {};
 const uxState = {};
 
 // === REGISTER TELEGRAM COMMANDS ===
-bot.telegram.setMyCommands(commandTree.commands);
+bot.telegram.setMyCommands(commandTree.commands.public);
 
 // ======================================================================
 // 🗺 ROUTE FEATURE — placeholder until full implementation

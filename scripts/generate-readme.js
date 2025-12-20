@@ -12,11 +12,17 @@ let template = fs.readFileSync(templatePath, "utf8");
 const pkg = require("../package.json");
 template = template.replace(/{{VERSION}}/g, pkg.version);
 
-// 3. Команды
+// 3. Commands
 const commandTree = require("../src/config/commandTree");
-const cmds = commandTree.commands
-  .map((c) => `/${c.command} — ${c.description}`)
-  .join("\n");
+
+const commands = Array.isArray(commandTree.commands)
+  ? commandTree.commands
+  : Object.entries(commandTree.commands || {}).map(([command, data]) => ({
+      command,
+      description: data.description || "",
+    }));
+
+const cmds = commands.map((c) => `/${c.command} — ${c.description}`).join("\n");
 
 template = template.replace(/{{COMMANDS}}/g, cmds);
 
