@@ -9,6 +9,33 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 // включаем поддержку ctx.session
 bot.use(session());
 
+// ======================================================================
+// GLOBAL UX ENTRY (safe, no recursion)
+// ======================================================================
+bot.use(async (ctx, next) => {
+  // реагируем только на обычный текст
+  if (!ctx.message?.text) return next();
+
+  const text = ctx.message.text;
+
+  // команды и debug не трогаем
+  if (text.startsWith("/")) return next();
+
+  // если это callback / location / service — пропускаем
+  if (ctx.callbackQuery || ctx.message.location) return next();
+
+  // UX entry
+  await ctx.reply(
+    "🌍 Choose language / Выберите язык",
+    Markup.inlineKeyboard([
+      Markup.button.callback("🇬🇧 English", "lang_en"),
+      Markup.button.callback("🇷🇺 Русский", "lang_ru"),
+    ]),
+  );
+
+  // ❗ НЕ вызываем next() — сознательно останавливаем пайплайн
+});
+
 // === STORES & CONFIG ===
 const userStore = require("./utils/userStore");
 const commandTree = require("./config/commandTree");
@@ -34,6 +61,9 @@ const ADMIN_ID = 36837506;
 // хранение последней локации по пользователям
 const lastLocation = {};
 
+// === UX FLOW STATE (temporary, no persistence) ===
+const uxState = {};
+
 // === REGISTER TELEGRAM COMMANDS ===
 bot.telegram.setMyCommands(commandTree.commands);
 
@@ -46,14 +76,17 @@ function startRouteMode(ctx) {
 }
 
 // ======================================================================
-// /start
+// /start — UX onboarding
 // ======================================================================
 bot.start((ctx) => {
-  const lang = ctx.session?.lang || "ru";
+  uxState[ctx.from.id] = { step: "lang" };
 
-  ctx.reply(
-    "Добро пожаловать в FridlinAirBOT!",
-    Markup.keyboard(commandTree.menus[lang]).resize(),
+  return ctx.reply(
+    "🌍 Choose language / Выберите язык",
+    Markup.inlineKeyboard([
+      Markup.button.callback("🇬🇧 English", "lang_en"),
+      Markup.button.callback("🇷🇺 Русский", "lang_ru"),
+    ]),
   );
 });
 
@@ -98,7 +131,7 @@ require("./commands/debug_reset")(bot);
 require("./commands/micro")(bot);
 
 // ======================================================================
-// LOCATION HANDLER
+// LOCATION HANDLER (без изменений)
 // ======================================================================
 bot.on("location", async (ctx) => {
   const userId = ctx.from.id;
@@ -135,10 +168,35 @@ bot.on("callback_query", async (ctx) => {
   const userId = ctx.from.id;
   const data = ctx.callbackQuery.data;
 
+  // === LANGUAGE SELECT ===
+  if (data === "lang_en" || data === "lang_ru") {
+    ctx.session.lang = data === "lang_en" ? "en" : "ru";
+    uxState[userId] = { step: "welcome" };
+
+    await ctx.answerCbQuery();
+
+    return ctx.reply(
+      ctx.session.lang === "en"
+        ? "Welcome to FridlinAir 🌤\n\nWe show very precise weather near you.\n\n📍 Please send your current location."
+        : "Добро пожаловать в FridlinAir 🌤\n\nМы показываем очень точную погоду рядом с вами.\n\n📍 Пожалуйста, отправьте ваше местоположение.",
+      Markup.keyboard([
+        Markup.button.locationRequest(
+          ctx.session.lang === "en"
+            ? "📍 Send location"
+            : "📍 Отправить локацию",
+        ),
+      ])
+        .resize()
+        .oneTime(),
+    );
+  }
+
+  // === DEBUG CALLBACKS ===
   if (data.startsWith("debug_")) {
     return ctx.answerCbQuery("Debug callback handled separately");
   }
 
+  // === LOCATION CONFIRM ===
   if (data === "use_location_yes") {
     const loc = lastLocation[userId];
     if (!loc) {
@@ -192,6 +250,23 @@ async function runDebugAction(ctx, lat, lon, mode) {
 
   setDebugState(id, null);
 }
+
+// ======================================================================
+// UX FALLBACK — любое обычное сообщение (реальный fallback)
+// ======================================================================
+bot.hears(/.*/, async (ctx) => {
+  const text = ctx.message?.text;
+  if (!text) return;
+  if (text.startsWith("/")) return;
+
+  return ctx.reply(
+    "🌍 Choose language / Выберите язык",
+    Markup.inlineKeyboard([
+      Markup.button.callback("🇬🇧 English", "lang_en"),
+      Markup.button.callback("🇷🇺 Русский", "lang_ru"),
+    ]),
+  );
+});
 
 // ======================================================================
 // BOT START

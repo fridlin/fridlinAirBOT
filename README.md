@@ -1,6 +1,6 @@
 # FridlinAirBOT  
 Погодный бот с микропрогнозом по координатам.  
-Версия: 2.0.6
+Версия: 2.0.7
 
 README обновляется автоматически при каждом релизе.
 
@@ -105,6 +105,21 @@ debug/
   debug_micro_grid_runner.js
   debug_micro_runner.js
   debug_time_runner.js
+docs/
+  0-target.md.md
+  1-core.md.md
+  1.2 params.md
+  2-feasibility.md.md
+  3-roadmap.md.md
+  4-weather-api.md.md
+  5-competitors.md.md
+  6-tech-stack.md.md
+  7-ux.md.md
+  8-decisions-log.md.md
+  9-ideas.md.md
+  FridlinAirBOT-structure.md
+  about.md
+  fridlinairbot_logic.md
 handlers/
   buttons.js
 i18n/
