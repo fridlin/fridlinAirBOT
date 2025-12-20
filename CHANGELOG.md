@@ -1,5 +1,91 @@
 # Changelog
 
+## v4.0.6 — 2025-12-20
+
+- release: v4.0.4
+- fix(i18n): fix ru.json syntax
+- release: v4.0.3
+- release: v4.0.1
+- release: v4.0.0
+- release: v3.1.0
+- release: v3.0.1
+- release: v3.0.0
+- release: v2.1.0
+- release: v2.0.7
+- Initial commit – project markdown refresh
+- Add docs folder
+- release: v2.0.6
+- fix: unify commands tree, fix buttons, update README template
+- release: v2.0.5
+- fix: correct changelog configuration to prevent version mismatch
+- release: v2.0.3
+- release: v2.0.2
+- release: v2.0.1
+- release: v1.0.2 – description of changes
+- docs: auto-update README and VERSION after version bump
+- 1.0.2
+- chore: add README autogeneration script and update postversion hook
+- chore: sync VERSION file after version bump
+- 1.0.1
+- chore: fix package.json scripts and add postversion hook
+- chore: bump version
+- chore: bump version to 0.2.0 and update changelog
+- Refactor: move weather & geocode logic to services
+- chore: add versioning files
+- fix...
+- initial import from Replit
+- Saved progress at the end of the loop
+- Add weather forecast functionality for Haifa to the Telegram bot
+- Add tool to make HTTP requests to external services
+- Add a basic template for creating a Telegram bot
+- Add Telegram bot functionality to the project
+- Create a Node.js starter project with an Express server
+- Initial commit
+
+
+## v4.0.5 — 2025-12-20
+
+- release: v4.0.4
+- fix(i18n): fix ru.json syntax
+- release: v4.0.3
+- release: v4.0.1
+- release: v4.0.0
+- release: v3.1.0
+- release: v3.0.1
+- release: v3.0.0
+- release: v2.1.0
+- release: v2.0.7
+- Initial commit – project markdown refresh
+- Add docs folder
+- release: v2.0.6
+- fix: unify commands tree, fix buttons, update README template
+- release: v2.0.5
+- fix: correct changelog configuration to prevent version mismatch
+- release: v2.0.3
+- release: v2.0.2
+- release: v2.0.1
+- release: v1.0.2 – description of changes
+- docs: auto-update README and VERSION after version bump
+- 1.0.2
+- chore: add README autogeneration script and update postversion hook
+- chore: sync VERSION file after version bump
+- 1.0.1
+- chore: fix package.json scripts and add postversion hook
+- chore: bump version
+- chore: bump version to 0.2.0 and update changelog
+- Refactor: move weather & geocode logic to services
+- chore: add versioning files
+- fix...
+- initial import from Replit
+- Saved progress at the end of the loop
+- Add weather forecast functionality for Haifa to the Telegram bot
+- Add tool to make HTTP requests to external services
+- Add a basic template for creating a Telegram bot
+- Add Telegram bot functionality to the project
+- Create a Node.js starter project with an Express server
+- Initial commit
+
+
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
 ### [4.0.4](https://github.com/fridlin/fridlinAirBOT/compare/v4.0.3...v4.0.4) (2025-12-20)
