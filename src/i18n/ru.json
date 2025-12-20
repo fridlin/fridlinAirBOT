@@ -6,8 +6,7 @@
 
   "micro_title": "Микропрогноз",
   "micro_subtitle": "Погода рядом с вами на ближайшие часы",
-  "micro_area_note": "Зона анализа: ~2×2 км"
-",
+  "micro_area_note": "Зона анализа: ~2×2 км",
   "timezone_label": "Часовой пояс",
 
   "warning": {
