@@ -1,14 +1,13 @@
 // src/commands/micro.js
-// All comments in English
 
 const { getMicroForecast } = require("../services/weatherMicro");
 const { setUserData } = require("../utils/userStore");
 const tzlookup = require("tz-lookup");
 const { t } = require("../utils/i18n");
 const analyzeForecastWindow = require("../utils/analyzeForecastWindow");
-const { getWeatherText } = require("../utils/weatherText");
 const { checkWarnings } = require("../warnings/checkWarnings");
 const { formatWarning } = require("../warnings/formatWarning");
+const { formatMicroForecast } = require("../formatters/microForecastFormatter");
 
 const DEV_LOG = true;
 
@@ -35,12 +34,12 @@ function findStartIndex(forecast) {
 }
 
 // ===========================
-// NORMALIZERS (real data shape)
+// NORMALIZERS
 // ===========================
 function normalizeWindSpeed(p) {
   if (typeof p?.wind?.speed === "number") return p.wind.speed;
   if (typeof p?.windspeed === "number") return p.windspeed;
-  return 0;
+  return null;
 }
 
 function normalizePrecipitation(p) {
@@ -57,14 +56,6 @@ function normalizeFeelsLike(p) {
 
 module.exports = (bot) => {
   // ===========================
-  // /micro (entry command)
-  // ===========================
-  bot.command("micro", (ctx) => {
-    if (DEV_LOG) console.log("[MICRO] /micro called by:", ctx.from.id);
-    return ctx.reply(t(ctx, "askLocation"));
-  });
-
-  // ===========================
   // LOCATION → RUN MICRO FORECAST
   // ===========================
   bot.on("location", async (ctx) => {
@@ -79,10 +70,9 @@ module.exports = (bot) => {
       );
     }
 
-    // Inform user
     await ctx.reply(t(ctx, "calculating_micro"));
 
-    // Determine timezone
+    // Timezone
     let timezone;
     try {
       timezone = tzlookup(latitude, longitude);
@@ -91,7 +81,7 @@ module.exports = (bot) => {
       return ctx.reply(t(ctx, "timezone_error"));
     }
 
-    // Get micro forecast
+    // Forecast
     let forecast;
     try {
       forecast = await getMicroForecast(latitude, longitude);
@@ -100,7 +90,6 @@ module.exports = (bot) => {
       return ctx.reply(t(ctx, "forecast_error"));
     }
 
-    // Store raw forecast
     setUserData(userId, { forecast, timezone });
 
     if (DEV_LOG) {
@@ -108,11 +97,10 @@ module.exports = (bot) => {
     }
 
     // ===========================
-    // FIXED WINDOW: 2 HOURS
-    // STEP: 30 minutes (base data = 15 min)
+    // WINDOW: 2 HOURS, STEP 30 MIN
     // ===========================
-    const STEP = 2; // 2 × 15 min = 30 min
-    const COUNT_2H = 4; // 4 points = 2 hours
+    const STEP = 2; // 2 × 15 min
+    const COUNT_2H = 4;
 
     const start = findStartIndex(forecast);
 
@@ -121,11 +109,10 @@ module.exports = (bot) => {
       .filter((_, index) => index % STEP === 0)
       .slice(0, COUNT_2H);
 
-    // Analyze trends and normalize data
     const slice = analyzeForecastWindow(rawSlice);
 
     // ===========================
-    // BUILD MAIN OUTPUT
+    // HEADER
     // ===========================
     let text =
       `🌤 ${t(ctx, "micro_title")}\n` +
@@ -133,40 +120,13 @@ module.exports = (bot) => {
       `${t(ctx, "micro_area_note")}\n` +
       `${t(ctx, "timezone_label")}: ${timezone}\n\n`;
 
-    const arrow = (v) => (v === "up" ? "↑" : v === "down" ? "↓" : "→");
-    const safe = (v) =>
-      typeof v === "number" && !Number.isNaN(v) ? v.toFixed(1) : "–";
-
-    for (const p of slice) {
-      p.text = getWeatherText(p);
-
-      const localTime = new Date(p.time).toLocaleTimeString("en-GB", {
-        timeZone: timezone,
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-      text +=
-        `${localTime}  ` +
-        `🌡 ${safe(p.temperature)}°C ${arrow(p.trend?.temperature)}  ` +
-        `🤔 ${safe(p.feelsLike)}°C ${arrow(p.trend?.feelsLike)}  ` +
-        `🌧 ${p.precipitation?.amount > 0 ? "rain" : "dry"}  ` +
-        `💨 ${safe(p.wind?.speed)} m/s ${arrow(p.trend?.wind)}\n`;
-    }
+    // BODY (UI formatter)
+    text += formatMicroForecast(slice, timezone);
 
     // ===========================
     // WARNINGS
     // ===========================
     const current = slice[0];
-
-    if (DEV_LOG && !current.wind && typeof current.windspeed === "number") {
-      console.warn("[MICRO] wind normalized from windspeed at", current.time);
-    }
-
-    if (DEV_LOG && typeof current.feelsLike !== "number") {
-      console.warn("[MICRO] feelsLike missing at", current.time);
-    }
 
     const now = {
       temperature: current.temperature,
@@ -194,7 +154,7 @@ module.exports = (bot) => {
     }
 
     // ===========================
-    // SEND MESSAGES
+    // SEND
     // ===========================
     await ctx.reply(text);
 
@@ -202,7 +162,5 @@ module.exports = (bot) => {
       const warningText = formatWarning(warning, (k) => t(ctx, k));
       await ctx.reply(warningText);
     }
-
-    return;
   });
 };

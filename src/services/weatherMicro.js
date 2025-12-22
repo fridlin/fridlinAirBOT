@@ -1,5 +1,13 @@
+// src/services/weatherMicro.js
+// All comments in English, as agreed
+
+// NOTE:
+// Internal interpolation uses 15-minute steps for smoother calculations.
+// User-facing forecast and alarms operate on a 30-minute step.
+
 const axios = require("axios");
 const { generateMicrogrid } = require("./geoGrid");
+const { calculateFeelsLike } = require("./feelsLike");
 
 // Enable detailed debug logs (true/false)
 const DEV_LOG = true;
@@ -37,9 +45,9 @@ function mergeMicrogridData(gridData) {
   const result = [];
 
   for (let i = 0; i < hours; i++) {
-    let sumT = 0,
-      sumH = 0,
-      sumW = 0;
+    let sumT = 0;
+    let sumH = 0;
+    let sumW = 0;
 
     for (const p of gridData) {
       sumT += p.data.temperature_2m[i];
@@ -47,11 +55,23 @@ function mergeMicrogridData(gridData) {
       sumW += p.data.windspeed_10m[i];
     }
 
+    const temperature = sumT / gridData.length;
+    const humidity = sumH / gridData.length;
+    const windspeed = sumW / gridData.length;
+
     result.push({
       time: gridData[0].data.time[i],
-      temperature: sumT / gridData.length,
-      humidity: sumH / gridData.length,
-      windspeed: sumW / gridData.length,
+      temperature,
+      humidity,
+      windspeed,
+      feelsLike: calculateFeelsLike({
+        temperature,
+        humidity,
+        windSpeed: windspeed, // km/h
+        windGusts: null,
+        clouds: false,
+        precipitation: "none",
+      }),
     });
   }
 
@@ -70,26 +90,38 @@ function interpolate15min(hourlyData) {
     const cur = hourlyData[i];
     const next = hourlyData[i + 1];
 
+    // Original hourly point
     result.push({
       time: cur.time,
       temperature: cur.temperature,
       humidity: cur.humidity,
       windspeed: cur.windspeed,
+      feelsLike: cur.feelsLike,
     });
 
     const dT = (next.temperature - cur.temperature) / 4;
     const dH = (next.humidity - cur.humidity) / 4;
     const dW = (next.windspeed - cur.windspeed) / 4;
 
+    // 15-min interpolated points
     for (let step = 1; step < 4; step++) {
-      const windMs = sumW / gridData.length;
-      const windKmh = windMs * 3.6;
+      const temperature = cur.temperature + dT * step;
+      const humidity = cur.humidity + dH * step;
+      const windspeed = cur.windspeed + dW * step;
 
       result.push({
-        time: gridData[0].data.time[i],
-        temperature: sumT / gridData.length,
-        humidity: sumH / gridData.length,
-        windspeed: windKmh, // km/h
+        time: addMinutes(cur.time, step * 15),
+        temperature,
+        humidity,
+        windspeed,
+        feelsLike: calculateFeelsLike({
+          temperature,
+          humidity,
+          windSpeed: windspeed, // km/h
+          windGusts: null,
+          clouds: false,
+          precipitation: "none",
+        }),
       });
     }
   }

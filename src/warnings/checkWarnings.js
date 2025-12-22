@@ -23,14 +23,16 @@ function checkWarnings(now, timeline, nowTs) {
   let severe = false;
 
   // ---------- FEELS LIKE (CURRENT) ----------
-  if (isFeelsLikeNoticeable(now.temperature, now.feels_like)) {
+  if (isFeelsLikeNoticeable(now.temperature, now.feelsLike)) {
     reasons.push({
       type: "feelslike_noticeable",
+      temperature: now.temperature,
+      feelsLike: now.feelsLike,
     });
   }
 
   // ---------- WIND (CURRENT) ----------
-  if (typeof now.wind_speed === "number" && now.wind_speed >= 7) {
+  if (typeof now.windspeed === "number" && now.windspeed >= 6) {
     reasons.push({
       type: "wind_now",
     });
