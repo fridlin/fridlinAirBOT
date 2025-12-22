@@ -15,7 +15,15 @@ function formatWarning(warning, t) {
     ? `🚨 ${t("warning.severe_title")}`
     : `⚠️ ${t("warning.title")}`;
 
-  const lines = reasons.map((r) => `• ${t(`warning.reasons.${r.type}`)}`);
+  const lines = reasons.map((r) => {
+    // Reasons without parameters
+    if (typeof r.minutes !== "number") {
+      return `• ${t(`warning.reasons.${r.type}`)}`;
+    }
+
+    // Reasons with time parameter (future events)
+    return `• ${t(`warning.reasons.${r.type}`, { minutes: r.minutes })}`;
+  });
 
   return [header, "", ...lines].join("\n");
 }

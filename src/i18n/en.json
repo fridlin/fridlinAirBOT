@@ -13,18 +13,17 @@
     "title": "Weather warning",
     "severe_title": "Severe weather warning",
     "reasons": {
-      "feels_like_now": "Feels different than actual temperature",
-      "feels_like_future": "Feels like will change soon",
+      "feelslike_noticeable": "Feels-like temperature differs noticeably from actual temperature",
 
       "wind_now": "Strong wind now",
-      "wind_future": "Wind will increase soon",
+      "wind_future": "Wind increasing in {{minutes}} minutes",
 
       "humidity_low": "Low humidity now",
       "humidity_high": "High humidity now",
-      "humidity_future": "Humidity will change soon",
+      "humidity_future": "Humidity changing in {{minutes}} minutes",
 
-      "rain_now": "Rain now — umbrella recommended",
-      "rain_future": "Rain expected soon"
+      "rain_now": "Rain now",
+      "rain_future": "Rain expected in {{minutes}} minutes"
     }
   }
 }

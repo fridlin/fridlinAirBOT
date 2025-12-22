@@ -9,29 +9,30 @@
  * @returns {Object|null} warning object or null
  */
 
+// ---------- HELPERS ----------
+
+function isFeelsLikeNoticeable(temp, feelsLike) {
+  if (typeof temp !== "number" || typeof feelsLike !== "number") return false;
+  return Math.abs(feelsLike - temp) > 3;
+}
+
+// ---------- MAIN ----------
+
 function checkWarnings(now, timeline, nowTs) {
   const reasons = [];
   let severe = false;
 
   // ---------- FEELS LIKE (CURRENT) ----------
-  if (typeof now.feels_like === "number") {
-    const feelsDiff = Math.abs(now.temperature - now.feels_like);
-    if (feelsDiff > 3) {
-      reasons.push({
-        type: "feels_like_now",
-        text:
-          now.feels_like > now.temperature
-            ? "Feels warmer than actual temperature"
-            : "Feels colder than actual temperature",
-      });
-    }
+  if (isFeelsLikeNoticeable(now.temperature, now.feels_like)) {
+    reasons.push({
+      type: "feelslike_noticeable",
+    });
   }
 
   // ---------- WIND (CURRENT) ----------
   if (typeof now.wind_speed === "number" && now.wind_speed >= 7) {
     reasons.push({
       type: "wind_now",
-      text: "Strong wind now",
     });
   }
 
@@ -40,13 +41,11 @@ function checkWarnings(now, timeline, nowTs) {
     if (now.humidity < 30) {
       reasons.push({
         type: "humidity_low",
-        text: "Very dry air — khamsin-like conditions",
       });
     }
     if (now.humidity > 80) {
       reasons.push({
         type: "humidity_high",
-        text: "Very humid air",
       });
     }
   }
@@ -55,7 +54,6 @@ function checkWarnings(now, timeline, nowTs) {
   if (typeof now.precipitation === "number" && now.precipitation > 0) {
     reasons.push({
       type: "rain_now",
-      text: "Rain now — dress accordingly",
     });
   }
 
@@ -70,9 +68,9 @@ function checkWarnings(now, timeline, nowTs) {
     if (typeof data.precipitation === "number" && data.precipitation > 0) {
       reasons.push({
         type: "rain_future",
-        text: `Rain in ${minutes} minutes`,
+        minutes,
       });
-      break; // first rain is enough
+      break;
     }
 
     // Wind increase
@@ -83,7 +81,7 @@ function checkWarnings(now, timeline, nowTs) {
     ) {
       reasons.push({
         type: "wind_future",
-        text: `Wind increasing in ${minutes} minutes`,
+        minutes,
       });
     }
 
@@ -95,7 +93,7 @@ function checkWarnings(now, timeline, nowTs) {
     ) {
       reasons.push({
         type: "humidity_future",
-        text: `Humidity changing in ${minutes} minutes`,
+        minutes,
       });
     }
   }
