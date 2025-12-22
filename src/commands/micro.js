@@ -34,14 +34,13 @@ function findStartIndex(forecast) {
   return bestIndex;
 }
 
+// ===========================
+// NORMALIZERS (real data shape)
+// ===========================
 function normalizeWindSpeed(p) {
   if (typeof p?.wind?.speed === "number") return p.wind.speed;
+  if (typeof p?.windspeed === "number") return p.windspeed;
   return 0;
-}
-
-function normalizeHumidity(p) {
-  if (typeof p?.humidity === "number") return p.humidity;
-  return null;
 }
 
 function normalizePrecipitation(p) {
@@ -49,6 +48,11 @@ function normalizePrecipitation(p) {
     return p.precipitation.amount;
   }
   return 0;
+}
+
+function normalizeFeelsLike(p) {
+  if (typeof p?.feelsLike === "number") return p.feelsLike;
+  return null;
 }
 
 module.exports = (bot) => {
@@ -104,33 +108,18 @@ module.exports = (bot) => {
     }
 
     // ===========================
-    // FIXED WINDOW: 2 HOURS (4 points)
+    // FIXED WINDOW: 2 HOURS
+    // STEP: 30 minutes (base data = 15 min)
     // ===========================
-    const COUNT_2H = 4;
+    const STEP = 2; // 2 × 15 min = 30 min
+    const COUNT_2H = 4; // 4 points = 2 hours
 
     const start = findStartIndex(forecast);
-    // ===========================
-    // NORMALIZERS (real data shape)
-    // ===========================
-    function normalizeWindSpeed(p) {
-      if (typeof p?.wind?.speed === "number") return p.wind.speed;
-      if (typeof p?.windspeed === "number") return p.windspeed;
-      return 0;
-    }
 
-    function normalizeFeelsLike(p) {
-      if (typeof p?.feelsLike === "number") return p.feelsLike;
-      return null;
-    }
-
-    function normalizePrecipitation(p) {
-      if (typeof p?.precipitation?.amount === "number") {
-        return p.precipitation.amount;
-      }
-      return 0;
-    }
-
-    const rawSlice = forecast.slice(start, start + COUNT_2H);
+    const rawSlice = forecast
+      .slice(start)
+      .filter((_, index) => index % STEP === 0)
+      .slice(0, COUNT_2H);
 
     // Analyze trends and normalize data
     const slice = analyzeForecastWindow(rawSlice);
@@ -149,7 +138,6 @@ module.exports = (bot) => {
       typeof v === "number" && !Number.isNaN(v) ? v.toFixed(1) : "–";
 
     for (const p of slice) {
-      // Short weather description
       p.text = getWeatherText(p);
 
       const localTime = new Date(p.time).toLocaleTimeString("en-GB", {
@@ -163,7 +151,7 @@ module.exports = (bot) => {
         `${localTime}  ` +
         `🌡 ${safe(p.temperature)}°C ${arrow(p.trend?.temperature)}  ` +
         `🤔 ${safe(p.feelsLike)}°C ${arrow(p.trend?.feelsLike)}  ` +
-        `🌧 ${p.precipitation?.probability ?? 0}%  ` +
+        `🌧 ${p.precipitation?.amount > 0 ? "rain" : "dry"}  ` +
         `💨 ${safe(p.wind?.speed)} m/s ${arrow(p.trend?.wind)}\n`;
     }
 
@@ -171,6 +159,7 @@ module.exports = (bot) => {
     // WARNINGS
     // ===========================
     const current = slice[0];
+
     if (DEV_LOG && !current.wind && typeof current.windspeed === "number") {
       console.warn("[MICRO] wind normalized from windspeed at", current.time);
     }
@@ -184,9 +173,8 @@ module.exports = (bot) => {
       feels_like: normalizeFeelsLike(current),
       wind_speed: normalizeWindSpeed(current),
       humidity: typeof current.humidity === "number" ? current.humidity : null,
-      precipitation: normalizePrecipitation(current)
+      precipitation: normalizePrecipitation(current),
     };
-
 
     const timeline = slice.slice(1).map((p) => ({
       time: new Date(p.time).getTime(),
@@ -195,10 +183,9 @@ module.exports = (bot) => {
         feels_like: normalizeFeelsLike(p),
         wind_speed: normalizeWindSpeed(p),
         humidity: typeof p.humidity === "number" ? p.humidity : null,
-        precipitation: normalizePrecipitation(p)
-      }
+        precipitation: normalizePrecipitation(p),
+      },
     }));
-
 
     const warning = checkWarnings(now, timeline, Date.now());
 

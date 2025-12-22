@@ -40,13 +40,13 @@ function checkWarnings(now, timeline, nowTs) {
     if (now.humidity < 30) {
       reasons.push({
         type: "humidity_low",
-        text: "Low humidity now",
+        text: "Very dry air — khamsin-like conditions",
       });
     }
     if (now.humidity > 80) {
       reasons.push({
         type: "humidity_high",
-        text: "High humidity now",
+        text: "Very humid air",
       });
     }
   }
@@ -55,7 +55,7 @@ function checkWarnings(now, timeline, nowTs) {
   if (typeof now.precipitation === "number" && now.precipitation > 0) {
     reasons.push({
       type: "rain_now",
-      text: "Rain now — umbrella recommended",
+      text: "Rain now — dress accordingly",
     });
   }
 

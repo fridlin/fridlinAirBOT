@@ -1,8 +1,18 @@
 #!/usr/bin/env node
 
+/**
+ * Release script
+ * - bumps version (no tag, no auto-commit)
+ * - relies on npm postversion hook for:
+ *   - VERSION
+ *   - README
+ *   - CHANGELOG
+ * - creates ONE release commit
+ *
+ * Git push is handled by ship.js only
+ */
+
 const { execSync } = require("child_process");
-const fs = require("fs");
-const path = require("path");
 
 function run(cmd) {
   console.log(`> ${cmd}`);
@@ -16,31 +26,17 @@ if (!["patch", "minor", "major"].includes(type)) {
   process.exit(1);
 }
 
-// 1. Bump версии БЕЗ коммита и БЕЗ тега
+// 1. Bump version (this triggers postversion hook)
 run(`npm version ${type} --no-git-tag-version`);
 
-// 2. Читаем новую версию
+// 2. Read updated version
 const pkg = require("../package.json");
 const version = pkg.version;
 
-// 3. Обновляем VERSION
-fs.writeFileSync(path.join(__dirname, "..", "VERSION"), version);
+// 3. Stage all release artifacts
+run(`git add package.json package-lock.json VERSION README.md CHANGELOG.md`);
 
-// 4. Генерируем README
-run(`node scripts/generate-readme.js`);
-
-// 5. Генерируем CHANGELOG (один раз!)
-run(`npm run changelog:${type}`);
-
-// 6. Один релизный коммит
-run(`git add .`);
+// 4. Single release commit
 run(`git commit -m "release: v${version}"`);
 
-// 7. Создаём тег
-run(`git tag v${version}`);
-
-// 8. Пушим изменения и тег
-run(`git push`);
-run(`git push --tags`);
-
-console.log(`\n🎉 Release v${version} completed successfully!\n`);
+console.log(`\n✅ Release v${version} prepared successfully (no push)\n`);

@@ -1,32 +1,33 @@
+// scripts/generate-readme.js
+
 const fs = require("fs");
 const path = require("path");
 
-// Пути
+// Paths
 const templatePath = path.join(__dirname, "README.template.md");
 const outputPath = path.join(__dirname, "..", "README.md");
 
-// 1. Загружаем шаблон
+// 1. Load template
 let template = fs.readFileSync(templatePath, "utf8");
 
-// 2. Получаем версию
+// 2. Version
 const pkg = require("../package.json");
 template = template.replace(/{{VERSION}}/g, pkg.version);
 
-// 3. Commands
+// 3. Commands (PUBLIC only)
 const commandTree = require("../src/config/commandTree");
 
-const commands = Array.isArray(commandTree.commands)
-  ? commandTree.commands
-  : Object.entries(commandTree.commands || {}).map(([command, data]) => ({
-      command,
-      description: data.description || "",
-    }));
+const publicCommands = Array.isArray(commandTree.commands?.public)
+  ? commandTree.commands.public
+  : [];
 
-const cmds = commands.map((c) => `/${c.command} — ${c.description}`).join("\n");
+const cmds = publicCommands
+  .map((c) => `/${c.command} — ${c.description}`)
+  .join("\n");
 
 template = template.replace(/{{COMMANDS}}/g, cmds);
 
-// 4. Debug-команды
+// 4. Debug commands (static block)
 const debugCommands = `
 /debug — главный debug режим
 /debug_micro — микропрогноз
@@ -37,7 +38,7 @@ const debugCommands = `
 
 template = template.replace(/{{DEBUG_COMMANDS}}/g, debugCommands);
 
-// 5. Параметры
+// 5. Parameters
 const params = `
 radiusStart: 2 km  
 radiusEnd: 5 km  
@@ -46,7 +47,7 @@ model: micro-weather grid
 
 template = template.replace(/{{PARAMS}}/g, params);
 
-// 6. Дерево папок
+// 6. Folder tree
 function getTree(dir, prefix = "") {
   const blacklist = ["node_modules", ".git", "__pycache__", ".DS_Store"];
 
@@ -77,7 +78,7 @@ function getTree(dir, prefix = "") {
 const tree = getTree(path.join(__dirname, "..", "src"));
 template = template.replace(/{{TREE}}/g, tree);
 
-// 7. Записываем README
+// 7. Write README
 fs.writeFileSync(outputPath, template);
 
-console.log("README.md успешно сгенерирован по шаблону!");
+console.log("README.md successfully generated from template");
