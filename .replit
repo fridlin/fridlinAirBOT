@@ -46,4 +46,4 @@ localPort = 5000
 externalPort = 80
 
 [nix]
-packages = ["psmisc", "tree"]
+packages = ["psmisc", "tree", "at"]
