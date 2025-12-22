@@ -3,7 +3,7 @@
 Погодный Telegram-бот с микропрогнозом по точным координатам.  
 Фокус — максимально точная погода **«здесь и сейчас»** и в ближайшие часы.
 
-**Версия:** 4.0.6
+**Версия:** 4.1.0
 
 README обновляется автоматически при каждом релизе.
 
@@ -174,6 +174,7 @@ services/
   geocode.js
   weather.js
   weatherMicro.js
+  weatherMicroFeels.js
   weatherMicroRaw.js
 utils/
   analyzeForecastWindow.js
