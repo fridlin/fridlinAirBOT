@@ -41,7 +41,7 @@ module.exports = function analyzeForecastWindow(slots) {
     const trend = {
       temperature: trendFromNow(now.temperature, slot.temperature),
       feelsLike: trendFromNow(now.feelsLike, slot.feelsLike),
-      wind: trendFromNow(now.wind?.speed ?? 0, slot.wind?.speed ?? 0),
+      wind: trendFromNow(now.windspeed ?? 0, slot.windspeed ?? 0),
     };
 
     // --- Sharp changes (relative to PREVIOUS slot) ---
@@ -50,17 +50,23 @@ module.exports = function analyzeForecastWindow(slots) {
     if (
       pctDelta(prev.temperature, slot.temperature) >=
       JUMP_THRESHOLDS.temperature
-    )
+    ) {
       reasons.push("temperature_jump");
-
-    if (pctDelta(prev.feelsLike, slot.feelsLike) >= JUMP_THRESHOLDS.feelsLike)
-      reasons.push("feelslike_jump");
+    }
 
     if (
-      pctDelta(prev.wind?.speed ?? 0, slot.wind?.speed ?? 0) >=
+      pctDelta(prev.feelsLike, slot.feelsLike) >=
+      JUMP_THRESHOLDS.feelsLike
+    ) {
+      reasons.push("feelslike_jump");
+    }
+
+    if (
+      pctDelta(prev.windspeed ?? 0, slot.windspeed ?? 0) >=
       JUMP_THRESHOLDS.wind
-    )
+    ) {
       reasons.push("wind_spike");
+    }
 
     const prevRain = prev.precipitation?.probability ?? 0;
     const currRain = slot.precipitation?.probability ?? 0;

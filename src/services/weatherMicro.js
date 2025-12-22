@@ -82,11 +82,14 @@ function interpolate15min(hourlyData) {
     const dW = (next.windspeed - cur.windspeed) / 4;
 
     for (let step = 1; step < 4; step++) {
+      const windMs = sumW / gridData.length;
+      const windKmh = windMs * 3.6;
+
       result.push({
-        time: addMinutes(cur.time, 15 * step),
-        temperature: cur.temperature + dT * step,
-        humidity: cur.humidity + dH * step,
-        windspeed: cur.windspeed + dW * step,
+        time: gridData[0].data.time[i],
+        temperature: sumT / gridData.length,
+        humidity: sumH / gridData.length,
+        windspeed: windKmh, // km/h
       });
     }
   }
