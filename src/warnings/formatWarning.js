@@ -1,53 +1,51 @@
 // src/warnings/formatWarning.js
 
-const UX = require("../ui/ux");
-
 /**
  * Formats warning object into user-facing text
- * @param {Object} warning - result of checkWarnings()
- * @param {Function} t - i18n translate function
- * @returns {String}
+ *
+ * RULES:
+ * - Receives ONLY semantic warning object
+ * - Receives ONLY reason.type (no ready-made text)
+ * - ALWAYS translates via i18n
+ * - NEVER outputs raw translation keys to user
+ * - DOES NOT decide alarm vs warning (pure formatting)
  */
 
-const REASON_PRIORITY = {
-  feelslike_noticeable: 100,
-  rain_now: 90,
-  rain_future: 80,
-  wind_now: 70,
-  wind_future: 60,
-  humidity_high: 40,
-  humidity_low: 30,
-  humidity_future: 20,
-};
-
 function formatWarning(warning, t) {
-  const { severe, reasons } = warning;
+  if (!warning || !Array.isArray(warning.reasons)) return null;
 
-  const header = severe
-    ? `${UX.icons.alertSevere} ${t("warning.severe_title")}`
-    : `${UX.icons.alert} ${t("warning.title")}`;
+  const { reasons, alarm } = warning;
 
-  const sortedReasons = [...reasons].sort((a, b) => {
-    const pa = REASON_PRIORITY[a.type] ?? 0;
-    const pb = REASON_PRIORITY[b.type] ?? 0;
-    return pb - pa;
-  });
+  const header = alarm
+    ? `🚨 ${t("warning.alarm_title")}`
+    : `⚠️ ${t("warning.title")}`;
 
-  const lines = sortedReasons.map((r) => {
-    if (r.type === "feelslike_noticeable") {
-      return UX.format.feelsLike(r);
+  const lines = [];
+
+  for (const reason of reasons) {
+    if (!reason?.type) continue;
+
+    const key = `warning.reasons.${reason.type}`;
+    let text = t(key);
+
+    // ---------- DEV-SAFE GUARD ----------
+    // If translation is missing, NEVER show raw key to user
+    if (text === key) {
+      console.warn("[WARNING][I18N][MISSING]", key, reason);
+      text = "⚠️ Weather condition notice";
     }
 
-    if (typeof r.minutes !== "number") {
-      return `${UX.icons.bullet} ${t(`warning.reasons.${r.type}`)}`;
+    // ---------- Template minutes if present ----------
+    if (typeof reason.minutes === "number") {
+      text = text.replace("{{minutes}}", reason.minutes);
     }
 
-    return `${UX.icons.bullet} ${t(`warning.reasons.${r.type}`, {
-      minutes: r.minutes,
-    })}`;
-  });
+    lines.push(`• ${text}`);
+  }
 
-  return [header, "", ...lines].join("\n");
+  if (lines.length === 0) return null;
+
+  return [header, ...lines].join("\n");
 }
 
 module.exports = { formatWarning };

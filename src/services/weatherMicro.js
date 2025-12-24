@@ -1,21 +1,20 @@
 // src/services/weatherMicro.js
-// All comments in English, as agreed
-
-// NOTE:
-// Internal interpolation uses 15-minute steps for smoother calculations.
-// User-facing forecast and alarms operate on a 30-minute step.
 
 const axios = require("axios");
 const { generateMicrogrid } = require("./geoGrid");
 const { calculateFeelsLike } = require("./feelsLike");
 
-// Enable detailed debug logs (true/false)
 const DEV_LOG = true;
+const HOUR_MS = 60 * 60 * 1000;
 
-// Get hourly forecasts for all 5 points in the microgrid
+// ===========================
+// API FETCH
+// ===========================
+
 async function getHourlyForMicrogrid(points) {
-  if (DEV_LOG)
+  if (DEV_LOG) {
     console.log("[DEV] Generating API requests for microgrid:", points);
+  }
 
   const requests = points.map((p) => {
     const url =
@@ -29,20 +28,35 @@ async function getHourlyForMicrogrid(points) {
 
   const responses = await Promise.all(requests);
 
-  if (DEV_LOG) console.log("[DEV] All microgrid responses received");
+  if (DEV_LOG) {
+    console.log("[DEV] All microgrid responses received");
+  }
 
   return responses.map((resp, i) => ({
     point: points[i].name,
-    data: resp.data.hourly,
+    data: resp.data.hourly || {},
   }));
 }
 
-// Merge (average) the 5 microgrid forecasts into a single hourly forecast
-function mergeMicrogridData(gridData) {
-  if (DEV_LOG) console.log("[DEV] Merging hourly forecasts from microgrid…");
+// ===========================
+// MERGE MICROGRID
+// ===========================
 
-  const hours = gridData[0].data.time.length;
+function mergeMicrogridData(gridData) {
+  if (DEV_LOG) {
+    console.log("[DEV] Merging hourly forecasts from microgrid…");
+  }
+
+  const ref = gridData[0]?.data || {};
+  const temps = ref.temperature_2m || [];
+  const hums = ref.relativehumidity_2m || [];
+  const winds = ref.windspeed_10m || [];
+  const times = Array.isArray(ref.time) ? ref.time : null;
+
+  const hours = Math.min(temps.length, hums.length, winds.length);
   const result = [];
+
+  const baseTs = Date.now();
 
   for (let i = 0; i < hours; i++) {
     let sumT = 0;
@@ -50,24 +64,29 @@ function mergeMicrogridData(gridData) {
     let sumW = 0;
 
     for (const p of gridData) {
-      sumT += p.data.temperature_2m[i];
-      sumH += p.data.relativehumidity_2m[i];
-      sumW += p.data.windspeed_10m[i];
+      sumT += p.data.temperature_2m?.[i] ?? 0;
+      sumH += p.data.relativehumidity_2m?.[i] ?? 0;
+      sumW += p.data.windspeed_10m?.[i] ?? 0;
     }
 
     const temperature = sumT / gridData.length;
     const humidity = sumH / gridData.length;
     const windspeed = sumW / gridData.length;
 
+    const time =
+      times && typeof times[i] === "string"
+        ? times[i]
+        : new Date(baseTs + i * HOUR_MS).toISOString();
+
     result.push({
-      time: gridData[0].data.time[i],
+      time,
       temperature,
       humidity,
       windspeed,
       feelsLike: calculateFeelsLike({
         temperature,
         humidity,
-        windSpeed: windspeed, // km/h
+        windSpeed: windspeed,
         windGusts: null,
         clouds: false,
         precipitation: "none",
@@ -75,14 +94,21 @@ function mergeMicrogridData(gridData) {
     });
   }
 
-  if (DEV_LOG) console.log("[DEV] Merged hourly count:", result.length);
+  if (DEV_LOG) {
+    console.log("[DEV] Merged hourly count:", result.length);
+  }
 
   return result;
 }
 
-// Turn hourly forecast into 15-minute forecast with linear interpolation
+// ===========================
+// INTERPOLATION (15 MIN)
+// ===========================
+
 function interpolate15min(hourlyData) {
-  if (DEV_LOG) console.log("[DEV] Interpolating 15-min forecast…");
+  if (DEV_LOG) {
+    console.log("[DEV] Interpolating 15-min forecast…");
+  }
 
   const result = [];
 
@@ -90,9 +116,15 @@ function interpolate15min(hourlyData) {
     const cur = hourlyData[i];
     const next = hourlyData[i + 1];
 
-    // Original hourly point
+    const curTs = new Date(cur.time).getTime();
+    const nextTs = new Date(next.time).getTime();
+
+    if (!Number.isFinite(curTs) || !Number.isFinite(nextTs)) {
+      continue;
+    }
+
     result.push({
-      time: cur.time,
+      time: new Date(curTs).toISOString(),
       temperature: cur.temperature,
       humidity: cur.humidity,
       windspeed: cur.windspeed,
@@ -103,21 +135,18 @@ function interpolate15min(hourlyData) {
     const dH = (next.humidity - cur.humidity) / 4;
     const dW = (next.windspeed - cur.windspeed) / 4;
 
-    // 15-min interpolated points
     for (let step = 1; step < 4; step++) {
-      const temperature = cur.temperature + dT * step;
-      const humidity = cur.humidity + dH * step;
-      const windspeed = cur.windspeed + dW * step;
+      const ts = curTs + step * 15 * 60 * 1000;
 
       result.push({
-        time: addMinutes(cur.time, step * 15),
-        temperature,
-        humidity,
-        windspeed,
+        time: new Date(ts).toISOString(),
+        temperature: cur.temperature + dT * step,
+        humidity: cur.humidity + dH * step,
+        windspeed: cur.windspeed + dW * step,
         feelsLike: calculateFeelsLike({
-          temperature,
-          humidity,
-          windSpeed: windspeed, // km/h
+          temperature: cur.temperature + dT * step,
+          humidity: cur.humidity + dH * step,
+          windSpeed: cur.windspeed + dW * step,
           windGusts: null,
           clouds: false,
           precipitation: "none",
@@ -126,35 +155,38 @@ function interpolate15min(hourlyData) {
     }
   }
 
-  if (DEV_LOG) console.log("[DEV] Interpolated 15-min count:", result.length);
+  if (DEV_LOG) {
+    console.log("[DEV] Interpolated 15-min count:", result.length);
+  }
 
   return result;
 }
 
-// Add minutes to ISO time string
-function addMinutes(timeStr, minutes) {
-  const date = new Date(timeStr);
-  date.setMinutes(date.getMinutes() + minutes);
-  return date.toISOString();
-}
+// ===========================
+// MAIN
+// ===========================
 
-// Main micro-forecast function
 async function getMicroForecast(lat, lon) {
-  if (DEV_LOG) console.log("[DEV] Starting micro-forecast for:", lat, lon);
+  if (DEV_LOG) {
+    console.log("[DEV] Starting micro-forecast for:", lat, lon);
+  }
 
   const grid = generateMicrogrid(lat, lon);
 
-  if (DEV_LOG) console.log("[DEV] Microgrid generated:", grid);
+  if (DEV_LOG) {
+    console.log("[DEV] Microgrid generated:", grid);
+  }
 
   const gridData = await getHourlyForMicrogrid(grid);
   const hourly = mergeMicrogridData(gridData);
   const forecast15 = interpolate15min(hourly);
 
-  if (DEV_LOG)
+  if (DEV_LOG) {
     console.log(
       "[DEV] Micro-forecast completed. Total entries:",
       forecast15.length,
     );
+  }
 
   return forecast15;
 }

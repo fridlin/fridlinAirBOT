@@ -1,71 +1,140 @@
 // src/ui/ux.js
 
+/**
+ * UX configuration (CSS-like).
+ *
+ * RULES:
+ * - No logic
+ * - No conditions
+ * - No calculations
+ * - Only presentation
+ */
+
 const UX = {
-  icons: {
-    temperature: "🌡️",
-    feelsLike: "👤",
-    wind: "💨",
-    rain: "🌧",
-    dry: "☁️",
-    warning: "⚠️",
-    severe: "🚨",
+  // ===========================
+  // GENERAL LAYOUT
+  // ===========================
+
+  layout: {
+    lineSeparator: "\n",
+    sectionSeparator: "\n\n",
+    itemSeparator: " ",
   },
 
-  arrows: {
-    up: "↑",
-    down: "↓",
-    stable: "→",
+  // ===========================
+  // HEADER
+  // ===========================
+
+  header: {
+    icon: "🌤",
+    showTimezone: true,
   },
 
-  units: {
-    temperature: "°",
-    wind: "km/h",
+  // ===========================
+  // TIME
+  // ===========================
+
+  time: {
+    show: true,
+    prefix: "",
+    suffix: "",
+    format: "HH:mm",
   },
 
-  spacing: {
-    inline: "  ",
-    line: "\n",
-    block: "\n\n",
+  // ===========================
+  // TEMPERATURE
+  // ===========================
+
+  temperature: {
+    emoji: "🌡️",
+    unit: "°",
+    decimals: 1,
   },
 
-  labels: {
-    rain: "rain",
-    dry: "dry",
+  feelsLike: {
+    emoji: "👤",
+    unit: "°",
+    decimals: 1,
+    alwaysShow: true,
   },
 
-  format: {
-    temperature({ t, f }) {
-      if (f === null || f === undefined) {
-        return `${UX.icons.temperature} ${Math.round(t)}${UX.units.temperature}`;
-      }
+  // ===========================
+  // WIND
+  // ===========================
 
-      return (
-        `${UX.icons.temperature} ${Math.round(t)}${UX.units.temperature}` +
-        ` (${UX.icons.feelsLike} ${Math.round(f)}${UX.units.temperature})`
-      );
-    },
-
-    wind({ v, trend }) {
-      const value =
-        typeof v === "number" ? `${Math.round(v)} ${UX.units.wind}` : "–";
-      return `${UX.icons.wind} ${value} ${trend ?? UX.arrows.stable}`;
-    },
-
-    precipitation({ hasRain }) {
-      return hasRain
-        ? `${UX.icons.rain} ${UX.labels.rain}`
-        : `${UX.icons.dry} ${UX.labels.dry}`;
-    },
-
-    time({ iso, timezone }) {
-      return new Date(iso).toLocaleTimeString("en-GB", {
-        timeZone: timezone,
-        hour12: false,
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+  wind: {
+    emoji: "💨",
+    unit: "km/h",
+    decimals: 0,
+    trendIcons: {
+      up: "↑",
+      down: "↓",
+      stable: "→",
     },
   },
+
+  // ===========================
+  // SKY STATES (FACT, NOT WARNING)
+  // ===========================
+
+  sky: {
+    sun: {
+      emoji: "☀️",
+      label: "dry",
+    },
+    cloud: {
+      emoji: "☁️",
+      label: "dry",
+    },
+    rain: {
+      emoji: "🌧️",
+      label: "rain",
+    },
+    storm: {
+      emoji: "⛈️",
+      label: "storm",
+    },
+    squallRain: {
+      emoji: "☔💨",
+      label: "rain + squalls",
+    }
+  },
+
+  // ===========================
+  // WARNINGS (HUMAN FEELING)
+  // ===========================
+
+  warning: {
+    header: {
+      icon: "⚠️",
+    },
+    bullet: "•",
+    order: [
+      "feelslike_noticeable",
+      "wind_noticeable",
+      "humidity_high",
+      "humidity_low",
+      "rain_now",
+      "rain_future"
+    ]
+  },
+
+  // ===========================
+  // ALARMS (METEO DANGER)
+  // ===========================
+
+  alarm: {
+    header: {
+      icon: "🚨",
+    },
+    bullet: "•",
+    order: [
+      "storm_now",
+      "storm_future",
+      "wind_strong",
+      "wind_strong_future"
+    ]
+  }
 };
 
 module.exports = UX;

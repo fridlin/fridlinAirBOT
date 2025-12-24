@@ -1,112 +1,159 @@
 // src/warnings/checkWarnings.js
-// All comments in English, as agreed
+
+const WEATHER_THRESHOLDS = require("../config/weatherThresholds");
 
 /**
- * Checks weather warnings based on current and near-future conditions
- * @param {Object} now - current weather snapshot
- * @param {Array} timeline - array of future slots [{ time, data }]
- * @param {Number} nowTs - current timestamp (ms)
- * @returns {Object|null} warning object or null
+ * WARNING = human comfort
+ * ALARM   = meteorological danger
+ *
+ * IMPORTANT:
+ * - reason.type is ONLY a concrete weather fact (storm_now, wind_noticeable, etc.)
+ * - alarm vs warning is NOT a reason.type
+ * - This module returns semantic structure, no UX text
  */
-
-// ---------- HELPERS ----------
 
 function isFeelsLikeNoticeable(temp, feelsLike) {
   if (typeof temp !== "number" || typeof feelsLike !== "number") return false;
-  return Math.abs(feelsLike - temp) > 3;
+  return (
+    Math.abs(feelsLike - temp) > WEATHER_THRESHOLDS.feelsLike.noticeableDelta
+  );
 }
-
-// ---------- MAIN ----------
 
 function checkWarnings(now, timeline, nowTs) {
   const reasons = [];
-  let severe = false;
 
-  // ---------- FEELS LIKE (CURRENT) ----------
+  // ===========================
+  // ALARM: STORM (CURRENT)
+  // ===========================
+  if (now.storm === true) {
+    console.log("[WARNING][WHY] storm_now = true");
+    return {
+      alarm: true,
+      reasons: [{ type: "storm_now" }],
+    };
+  }
+
+  // ===========================
+  // WARNINGS — CURRENT (COMFORT)
+  // ===========================
+
+  // Feels-like
   if (isFeelsLikeNoticeable(now.temperature, now.feelsLike)) {
-    reasons.push({
-      type: "feelslike_noticeable",
-      temperature: now.temperature,
-      feelsLike: now.feelsLike,
-    });
+    console.log(
+      "[WARNING][WHY] feelslike_noticeable:",
+      now.feelsLike,
+      "vs",
+      now.temperature,
+    );
+    reasons.push({ type: "feelslike_noticeable" });
   }
 
-  // ---------- WIND (CURRENT) ----------
-  if (typeof now.windspeed === "number" && now.windspeed >= 6) {
-    reasons.push({
-      type: "wind_now",
-    });
+  // Wind (noticeable, not dangerous)
+  if (
+    typeof now.windspeed === "number" &&
+    now.windspeed >= WEATHER_THRESHOLDS.wind.noticeable
+  ) {
+    console.log(
+      "[WARNING][WHY] wind_noticeable:",
+      now.windspeed,
+      ">=",
+      WEATHER_THRESHOLDS.wind.noticeable,
+    );
+    reasons.push({ type: "wind_noticeable" });
   }
 
-  // ---------- HUMIDITY (CURRENT) ----------
+  // Humidity (comfort)
   if (typeof now.humidity === "number") {
-    if (now.humidity < 30) {
-      reasons.push({
-        type: "humidity_low",
-      });
+    if (now.humidity < WEATHER_THRESHOLDS.humidity.low) {
+      console.log(
+        "[WARNING][WHY] humidity_low:",
+        now.humidity,
+        "<",
+        WEATHER_THRESHOLDS.humidity.low,
+      );
+      reasons.push({ type: "humidity_low" });
     }
-    if (now.humidity > 80) {
-      reasons.push({
-        type: "humidity_high",
-      });
+
+    if (now.humidity > WEATHER_THRESHOLDS.humidity.high) {
+      console.log(
+        "[WARNING][WHY] humidity_high:",
+        now.humidity,
+        ">",
+        WEATHER_THRESHOLDS.humidity.high,
+      );
+      reasons.push({ type: "humidity_high" });
     }
   }
 
-  // ---------- RAIN (CURRENT) ----------
-  if (typeof now.precipitation === "number" && now.precipitation > 0) {
-    reasons.push({
-      type: "rain_now",
-    });
+  // Rain (fact, not danger)
+  if (
+    typeof now.precipitation === "number" &&
+    now.precipitation >= WEATHER_THRESHOLDS.precipitation.rainPresent
+  ) {
+    console.log(
+      "[WARNING][WHY] rain_now:",
+      now.precipitation,
+      ">=",
+      WEATHER_THRESHOLDS.precipitation.rainPresent,
+    );
+    reasons.push({ type: "rain_now" });
   }
 
-  // ---------- FUTURE CHECK (NEXT 60 MIN) ----------
+  // ===========================
+  // FUTURE (NEXT 60 MIN)
+  // ===========================
+
   for (const slot of timeline) {
     const minutes = Math.round((slot.time - nowTs) / 60000);
     if (minutes <= 0 || minutes > 60) continue;
 
     const data = slot.data || {};
 
-    // Rain expected
-    if (typeof data.precipitation === "number" && data.precipitation > 0) {
-      reasons.push({
-        type: "rain_future",
-        minutes,
-      });
+    // ALARM: future storm
+    if (data.storm === true) {
+      console.log("[WARNING][WHY] storm_future in", minutes, "min");
+      return {
+        alarm: true,
+        reasons: [{ type: "storm_future", minutes }],
+      };
+    }
+
+    // Rain
+    if (
+      typeof data.precipitation === "number" &&
+      data.precipitation >= WEATHER_THRESHOLDS.precipitation.rainPresent
+    ) {
+      console.log("[WARNING][WHY] rain_future in", minutes, "min");
+      reasons.push({ type: "rain_future", minutes });
       break;
     }
 
-    // Wind increase
+    // Wind increase (noticeable)
     if (
       typeof data.wind_speed === "number" &&
-      typeof now.wind_speed === "number" &&
-      data.wind_speed - now.wind_speed >= 3
+      typeof now.windspeed === "number" &&
+      data.wind_speed - now.windspeed >= WEATHER_THRESHOLDS.wind.noticeable
     ) {
-      reasons.push({
-        type: "wind_future",
-        minutes,
-      });
+      console.log("[WARNING][WHY] wind_future in", minutes, "min");
+      reasons.push({ type: "wind_future", minutes });
     }
 
     // Humidity change
     if (
       typeof data.humidity === "number" &&
       typeof now.humidity === "number" &&
-      Math.abs(data.humidity - now.humidity) >= 10
+      Math.abs(data.humidity - now.humidity) >=
+        WEATHER_THRESHOLDS.humidity.changeNoticeable
     ) {
-      reasons.push({
-        type: "humidity_future",
-        minutes,
-      });
+      console.log("[WARNING][WHY] humidity_future in", minutes, "min");
+      reasons.push({ type: "humidity_future", minutes });
     }
   }
 
   if (reasons.length === 0) return null;
 
-  // ---------- SEVERE MODE ----------
-  if (reasons.length >= 3) severe = true;
-
   return {
-    severe,
+    alarm: false,
     reasons,
   };
 }

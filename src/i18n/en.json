@@ -1,29 +1,65 @@
 {
-  "askLocation": "Please send your location",
+  "language": {
+    "title": "Choose language",
+    "title_ru": "Выберите язык"
+  },
+
+  "welcome": {
+    "title": "Welcome to FridlinAir 🌤",
+    "subtitle": "We show very precise weather near you.",
+    "location_request": "Please send your current location.",
+    "send_location_button": "📍 Send location"
+  },
+
   "calculating_micro": "Calculating micro forecast…",
-  "timezone_error": "Unable to determine timezone",
-  "forecast_error": "Unable to get weather forecast",
 
   "micro_title": "Micro forecast",
-  "micro_subtitle": "Weather around you for the next hours",
-  "micro_area_note": "Analysis area: ~2×2 km",
+  "micro_subtitle": "Weather conditions around you for the next hours",
+  "micro_area_note": "Analysis area: approximately 2×2 km",
   "timezone_label": "Timezone",
 
+  "compare": {
+    "no_change": "Compared to yesterday at {{time}} — no noticeable changes",
+    "changed": "Compared to yesterday at {{time}} — today it is {{changes}}",
+    "and": "and",
+
+    "colder": "colder",
+    "warmer": "warmer",
+
+    "windier": "windier",
+    "less_wind": "less windy",
+
+    "more_humid": "more humid",
+    "drier": "drier",
+
+    "cloudier": "more overcast",
+    "clearer": "clearer",
+    "cloud_changed": "different cloud cover"
+  },
+
   "warning": {
-    "title": "Weather warning",
-    "severe_title": "Severe weather warning",
+    "title": "Weather notice",
+    "alarm_title": "Weather alert",
     "reasons": {
-      "feelslike_noticeable": "Feels-like temperature differs noticeably from actual temperature",
+      "storm_now": "Dangerous storm conditions right now.",
+      "storm_future": "Dangerous storm conditions expected soon.",
+      "feelslike_noticeable": "It feels noticeably different than the actual temperature.",
+      "wind_noticeable": "The wind is clearly noticeable.",
+      "wind_future": "Wind conditions will change soon.",
 
-      "wind_now": "Strong wind now",
-      "wind_future": "Wind increasing in {{minutes}} minutes",
-
-      "humidity_low": "Low humidity now",
-      "humidity_high": "High humidity now",
-      "humidity_future": "Humidity changing in {{minutes}} minutes",
-
-      "rain_now": "Rain now",
-      "rain_future": "Rain expected in {{minutes}} minutes"
+      "humidity_low": "Very low humidity may cause discomfort.",
+      "humidity_high": "High humidity may feel uncomfortable.",
+      "humidity_future": "Humidity level will change soon.",
+      "rain_now": "Precipitation is occurring right now.",
+      "rain_future": "Precipitation is expected soon."
     }
-  }
+  },
+
+  "error": {
+    "title": "⚠️ Error",
+    "restart": "Let’s start again."
+  },
+
+  "timezone_error": "We couldn’t determine the timezone for this location. Please send your location again.",
+  "forecast_error_retry": "Weather data is temporarily unavailable. Please try again a bit later."
 }

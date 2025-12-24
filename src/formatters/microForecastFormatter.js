@@ -1,41 +1,71 @@
 // src/formatters/microForecastFormatter.js
 
+const UX = require("../ui/ux");
+
 /**
- * Formats micro forecast slice into user-facing text.
- * Responsible for emojis, layout, spacing and visual consistency.
+ * Formats micro forecast data into a user-facing string.
  *
- * @param {Array} slice - analyzed forecast window (normalized)
- * @param {string} timezone - user timezone
- * @returns {string}
+ * RULES:
+ * ❌ No calculations
+ * ❌ No thresholds
+ * ❌ No units
+ * ❌ No formatting decisions
+ * ✅ Only rendering via UX config
  */
-function formatMicroForecast(slice, timezone) {
-  const arrow = (v) => (v === "up" ? "↑" : v === "down" ? "↓" : "→");
-  const safeInt = (v) =>
-    typeof v === "number" && !Number.isNaN(v) ? Math.round(v) : "–";
 
-  let text = "";
+function formatMicroForecast({
+  timeLabel,
+  temperature,
+  feelsLike,
+  windSpeed,
+  windTrend,
+  skyState,
+}) {
+  const sky = UX.sky[skyState] || UX.sky.cloud;
+  const parts = [];
 
-  for (const p of slice) {
-    const localTime = new Date(p.time).toLocaleTimeString("en-GB", {
-      timeZone: timezone,
-      hour12: false,
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    const tempLine =
-      p.feelsLike !== null && typeof p.feelsLike === "number"
-        ? `🌡️ ${safeInt(p.temperature)}° (👤 ${safeInt(p.feelsLike)}°)`
-        : `🌡️ ${safeInt(p.temperature)}°`;
-
-    text +=
-      `${localTime}  ` +
-      `${tempLine} ${arrow(p.trend?.temperature)}  ` +
-      `🌧 ${p.precipitation?.amount > 0 ? "rain" : "dry"}  ` +
-      `💨 ${safeInt(p.wind?.speed)} m/s ${arrow(p.trend?.wind)}\n`;
+  // Time
+  if (UX.time?.show && timeLabel) {
+    parts.push(timeLabel);
   }
 
-  return text;
+  // Sky
+  parts.push(sky.emoji);
+
+  // Temperature
+  if (typeof temperature === "number") {
+    parts.push(
+      `${UX.temperature.emoji} ${temperature.toFixed(
+        UX.temperature.decimals,
+      )}${UX.temperature.unit}`,
+    );
+  }
+
+  // Feels-like
+  if (UX.feelsLike.alwaysShow && typeof feelsLike === "number") {
+    parts.push(
+      `${UX.feelsLike.emoji} ${feelsLike.toFixed(
+        UX.feelsLike.decimals,
+      )}${UX.feelsLike.unit}`,
+    );
+  }
+
+  // Wind
+  if (typeof windSpeed === "number") {
+    const trendIcon = UX.wind.trendIcons?.[windTrend] || "";
+    parts.push(
+      `${UX.wind.emoji} ${windSpeed.toFixed(
+        UX.wind.decimals,
+      )} ${UX.wind.unit}${trendIcon}`,
+    );
+  }
+
+  // Fact label (dry / rain / storm)
+  if (sky.label) {
+    parts.push(sky.label);
+  }
+
+  return parts.join(UX.layout.itemSeparator);
 }
 
 module.exports = {

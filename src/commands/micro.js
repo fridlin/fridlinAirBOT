@@ -1,166 +1,272 @@
 // src/commands/micro.js
 
-const { getMicroForecast } = require("../services/weatherMicro");
-const { setUserData } = require("../utils/userStore");
 const tzlookup = require("tz-lookup");
 const { t } = require("../utils/i18n");
+
+const UI = require("../ui/textLayout");
+const { renderMicroForecastUI } = require("../ui/microForecastUI");
+
+const { getForecast } = require("../services/weatherForecast");
+const { getYesterdayWeather } = require("../services/weatherHistory");
+
+const { generateMicrogrid } = require("../services/geoGrid");
+const { aggregateMicrogridForecast } = require("../micro/microGridAggregator");
+const { interpolateForecast15min } = require("../micro/interpolateForecast");
+const { selectUiForecastPoints } = require("../utils/selectUiForecastPoints");
+
 const analyzeForecastWindow = require("../utils/analyzeForecastWindow");
+
 const { checkWarnings } = require("../warnings/checkWarnings");
 const { formatWarning } = require("../warnings/formatWarning");
+const { applyWarningAlarmUI } = require("../ui/warningAlarm");
+
 const { formatMicroForecast } = require("../formatters/microForecastFormatter");
+const { determineSkyState } = require("../utils/skyState");
+const { isStorm } = require("../utils/stormDetector");
 
-const DEV_LOG = true;
+const MICRO_CFG = require("../config/microForecast");
 
-/*
-  Find forecast index closest to current UTC time
-*/
-function findStartIndex(forecast) {
-  const nowUtc = Date.now();
+// ==================================================
+// HARD ERROR HANDLER → RESET TO /start
+// ==================================================
+async function hardFail(ctx, reason, meta = {}) {
+  console.error("[MICRO][FAIL]", reason, meta);
 
-  let bestIndex = 0;
-  let bestDiff = Infinity;
+  await ctx.reply(
+    UI.block(t(ctx, "error.title"), t(ctx, "forecast_error_retry")),
+  );
 
-  for (let i = 0; i < forecast.length; i++) {
-    const forecastUtc = new Date(forecast[i].time).getTime();
-    const diff = Math.abs(forecastUtc - nowUtc);
-
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestIndex = i;
-    }
-  }
-
-  return bestIndex;
+  return ctx.reply("/start");
 }
 
-// ===========================
-// NORMALIZERS
-// ===========================
-function normalizeWindSpeed(p) {
-  if (typeof p?.wind?.speed === "number") return p.wind.speed;
-  if (typeof p?.windspeed === "number") return p.windspeed;
-  return null;
+// ==================================================
+// NORMALIZERS (defensive)
+// ==================================================
+function n(x) {
+  return typeof x === "number" ? x : null;
 }
 
-function normalizePrecipitation(p) {
-  if (typeof p?.precipitation?.amount === "number") {
-    return p.precipitation.amount;
-  }
-  return 0;
-}
-
-function normalizeFeelsLike(p) {
-  if (typeof p?.feelsLike === "number") return p.feelsLike;
-  return null;
-}
-
+// ==================================================
+// BOT HANDLER
+// ==================================================
 module.exports = (bot) => {
-  // ===========================
-  // LOCATION → RUN MICRO FORECAST
-  // ===========================
   bot.on("location", async (ctx) => {
-    const userId = ctx.from.id;
     const { latitude, longitude } = ctx.message.location;
 
-    if (DEV_LOG) {
-      console.log(
-        `[MICRO] Location received from ${userId}:`,
-        latitude,
-        longitude,
-      );
-    }
+    console.log("[MICRO][START]", { latitude, longitude });
 
-    await ctx.reply(t(ctx, "calculating_micro"));
-
-    // Timezone
+    // --------------------------------------------------
+    // A.0 TIMEZONE (mandatory context)
+    // --------------------------------------------------
     let timezone;
     try {
       timezone = tzlookup(latitude, longitude);
-    } catch (e) {
-      console.error("[MICRO] Timezone lookup failed", e);
-      return ctx.reply(t(ctx, "timezone_error"));
+      console.log("[MICRO][TZ] resolved:", timezone);
+    } catch {
+      console.error("[MICRO][TZ][FAIL]", { latitude, longitude });
+
+      await ctx.reply(
+        UI.block(t(ctx, "error.title"), t(ctx, "timezone_error")),
+      );
+      return ctx.reply("/start");
     }
 
-    // Forecast
-    let forecast;
+    ctx.session = ctx.session || {};
+    ctx.session.timezone = timezone;
+
+    // First UX block: timezone
+    await ctx.reply(`⏰ ${timezone}`);
+
+    // --------------------------------------------------
+    // CALCULATING
+    // --------------------------------------------------
+    await ctx.reply(UI.text(t(ctx, "calculating_micro")));
+
+    // --------------------------------------------------
+    // FORECAST FETCH (API layer)
+    // --------------------------------------------------
+    const baseForecast = await getForecast(latitude, longitude);
+    if (!Array.isArray(baseForecast) || baseForecast.length === 0) {
+      return hardFail(ctx, "FORECAST_EMPTY");
+    }
+
+    // --------------------------------------------------
+    // MICROGRID
+    // --------------------------------------------------
+    const grid = generateMicrogrid(latitude, longitude);
+    console.log("[MICRO][GRID] generated:", grid.length);
+
+    // For now: same forecast applied to each grid point
+    // (keeps architecture correct; can be expanded later)
+    const gridForecasts = grid.map(() => baseForecast);
+
+    const aggregated = aggregateMicrogridForecast(gridForecasts);
+    if (!Array.isArray(aggregated) || aggregated.length === 0) {
+      return hardFail(ctx, "GRID_AGGREGATION_FAIL");
+    }
+
+    // --------------------------------------------------
+    // INTERPOLATION (15 min)
+    // --------------------------------------------------
+    const interpolated = interpolateForecast15min(aggregated);
+    if (!Array.isArray(interpolated) || interpolated.length === 0) {
+      return hardFail(ctx, "INTERPOLATION_FAIL");
+    }
+
+    // --------------------------------------------------
+    // TIME WINDOW FILTER
+    // --------------------------------------------------
+    const NOW = Date.now();
+    const WINDOW_MS = MICRO_CFG.HOURS_AHEAD * 60 * 60 * 1000;
+
+    const windowed = interpolated.filter(
+      (p) => p.ts >= NOW && p.ts <= NOW + WINDOW_MS,
+    );
+
+    console.log("[MICRO][WINDOW]", {
+      hours: MICRO_CFG.HOURS_AHEAD,
+      points: windowed.length,
+    });
+
+    if (windowed.length === 0) {
+      return hardFail(ctx, "WINDOW_EMPTY");
+    }
+
+    // --------------------------------------------------
+    // ANALYZE (trends, alerts)
+    // --------------------------------------------------
+    const analyzed = analyzeForecastWindow(
+      windowed.map((p) => ({
+        time: new Date(p.ts).toISOString(),
+        temperature: p.temperature,
+        feelsLike: p.feelsLike,
+        windspeed: p.windSpeed,
+        humidity: p.humidity,
+        cloudCover: p.cloudCover,
+        precipitation: p.precipitation,
+      })),
+    );
+
+    if (!Array.isArray(analyzed) || analyzed.length === 0) {
+      return hardFail(ctx, "ANALYZE_FAIL");
+    }
+
+    // --------------------------------------------------
+    // UI POINT SELECTION
+    // --------------------------------------------------
+    const uiPoints = selectUiForecastPoints(analyzed, NOW);
+    if (!uiPoints) {
+      return hardFail(ctx, "UI_POINTS_FAIL");
+    }
+
+    // --------------------------------------------------
+    // ENRICH FOR UI
+    // --------------------------------------------------
+    const enriched = uiPoints.map((p) => {
+      const windSpeed = n(p.windspeed);
+      const precipitation = n(p.precipitation) ?? 0;
+
+      const storm = isStorm({
+        windSpeed,
+        windGusts: null,
+        precipitation,
+        precipitationType: null,
+      });
+
+      const skyState = storm
+        ? "storm"
+        : determineSkyState({
+            cloudCover: n(p.cloudCover),
+            precipitation,
+          });
+
+      return {
+        ...p,
+        windSpeed,
+        storm,
+        skyState,
+        timeLabel: new Intl.DateTimeFormat("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: timezone,
+        }).format(new Date(p.time)),
+      };
+    });
+
+    // --------------------------------------------------
+    // YESTERDAY COMPARISON (optional block)
+    // --------------------------------------------------
     try {
-      forecast = await getMicroForecast(latitude, longitude);
+      const nowPoint = enriched[0];
+      const yPoint = await getYesterdayWeather(latitude, longitude, Date.now());
+
+      if (yPoint) {
+        console.log("[MICRO][YDAY] fetched");
+
+        // comparison UI is already implemented elsewhere
+        // block intentionally kept isolated
+      } else {
+        console.log("[MICRO][YDAY] skip");
+      }
     } catch (e) {
-      console.error("[MICRO] Forecast fetch failed", e);
-      return ctx.reply(t(ctx, "forecast_error"));
+      console.error("[MICRO][YDAY][FAIL]", e);
     }
 
-    setUserData(userId, { forecast, timezone });
-
-    if (DEV_LOG) {
-      console.log("[MICRO] Forecast stored for:", userId);
-    }
-
-    // ===========================
-    // WINDOW: 2 HOURS, STEP 30 MIN
-    // ===========================
-    const STEP = 2; // 2 × 15 min
-    const COUNT_2H = 4;
-
-    const start = findStartIndex(forecast);
-
-    const rawSlice = forecast
-      .slice(start)
-      .filter((_, index) => index % STEP === 0)
-      .slice(0, COUNT_2H);
-
-    const slice = analyzeForecastWindow(rawSlice);
-
-    // ===========================
-    // HEADER
-    // ===========================
-    let text =
-      `🌤 ${t(ctx, "micro_title")}\n` +
-      `${t(ctx, "micro_subtitle")}\n` +
-      `${t(ctx, "micro_area_note")}\n` +
-      `${t(ctx, "timezone_label")}: ${timezone}\n\n`;
-
-    // BODY (UI formatter)
-    text += formatMicroForecast(slice, timezone);
-
-    // ===========================
-    // WARNINGS
-    // ===========================
-    const current = slice[0];
-
-    const now = {
-      temperature: current.temperature,
-      feels_like: normalizeFeelsLike(current),
-      wind_speed: normalizeWindSpeed(current),
-      humidity: typeof current.humidity === "number" ? current.humidity : null,
-      precipitation: normalizePrecipitation(current),
+    // --------------------------------------------------
+    // MICRO FORECAST UI
+    // --------------------------------------------------
+    const header = {
+      title: t(ctx, "micro_title"),
+      subtitle: t(ctx, "micro_subtitle"),
+      areaNote: t(ctx, "micro_area_note"),
     };
 
-    const timeline = slice.slice(1).map((p) => ({
-      time: new Date(p.time).getTime(),
-      data: {
+    const lines = enriched.map((p) =>
+      formatMicroForecast({
+        timeLabel: p.timeLabel,
         temperature: p.temperature,
-        feels_like: normalizeFeelsLike(p),
-        wind_speed: normalizeWindSpeed(p),
-        humidity: typeof p.humidity === "number" ? p.humidity : null,
-        precipitation: normalizePrecipitation(p),
-      },
-    }));
+        feelsLike: p.feelsLike,
+        windSpeed: p.windSpeed,
+        windTrend: p.trend?.wind || "stable",
+        skyState: p.skyState,
+      }),
+    );
 
-    const warning = checkWarnings(now, timeline, Date.now());
-
-    if (DEV_LOG) {
-      console.log("[WARNING]", JSON.stringify(warning, null, 2));
+    const text = renderMicroForecastUI({ header, lines });
+    if (!text) {
+      return hardFail(ctx, "UI_RENDER_FAIL");
     }
 
-    // ===========================
-    // SEND
-    // ===========================
     await ctx.reply(text);
+
+    // --------------------------------------------------
+    // WARNINGS / ALARMS
+    // --------------------------------------------------
+    const first = enriched[0];
+
+    const warning = checkWarnings(
+      {
+        temperature: first.temperature,
+        feelsLike: first.feelsLike,
+        windspeed: first.windSpeed,
+        humidity: first.humidity ?? null,
+        precipitation: first.precipitation ?? 0,
+        storm: first.storm,
+      },
+      [],
+      Date.now(),
+    );
 
     if (warning) {
       const warningText = formatWarning(warning, (k) => t(ctx, k));
-      await ctx.reply(warningText);
+      const uiText = applyWarningAlarmUI(warning, warningText);
+
+      if (uiText) {
+        await ctx.reply(uiText);
+      }
     }
+
+    console.log("[MICRO][DONE]");
   });
 };
