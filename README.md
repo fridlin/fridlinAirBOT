@@ -3,7 +3,7 @@
 Погодный Telegram-бот с микропрогнозом по точным координатам.  
 Фокус — максимально точная погода **«здесь и сейчас»** и в ближайшие часы.
 
-**Версия:** 4.2.2
+**Версия:** 4.2.3
 
 README обновляется автоматически при каждом релизе.
 
@@ -140,7 +140,17 @@ commands/
   start.js
 config/
   commandTree.js
+  forecastProvider.js
   lang.js
+  microForecast.js
+  microForecastUI.js
+  storm/
+    stormDetector.js
+    stormRules.js
+  thresholds/
+    base.js
+  weatherProvider.js
+  weatherThresholds.js
 debug/
   debug_micro_full_runner.js
   debug_micro_grid_runner.js
@@ -159,9 +169,11 @@ docs/
   8-decisions-log.md.md
   9-ideas.md.md
   FridlinAirBOT-structure.md
+  TODO.md
   about.md
   fridlinairbot_logic.md
   push.md
+  warnings.md
 formatters/
   microForecastFormatter.js
 handlers/
@@ -169,6 +181,9 @@ handlers/
 i18n/
   en.json
   ru.json
+micro/
+  interpolateForecast.js
+  microGridAggregator.js
 middleware/
   session.js
 services/
@@ -176,19 +191,31 @@ services/
   geoGrid.js
   geocode.js
   weather.js
+  weatherForecast.js
+  weatherHistory.js
   weatherMicro.js
   weatherMicroFeels.js
   weatherMicroRaw.js
 test-formatTemperature.js
 ui/
+  compareYesterdayUI.js
+  microForecastUI.js
+  textLayout.js
   ux.js
+  warningAlarm.js
 utils/
   analyzeForecastWindow.js
+  compareWithYesterday.js
   coordParser.js
   debugState.js
   i18n.js
   logger.js
+  selectUiForecastPoints.js
+  skyState.js
+  stormDetector.js
   userStore.js
+  validateForecastPoint.js
+  validateHistoryPoint.js
   weatherText.js
 warnings/
   checkWarnings.js

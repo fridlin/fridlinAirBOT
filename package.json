@@ -1,6 +1,6 @@
 {
   "name": "nodejs-starter",
-  "version": "4.2.2",
+  "version": "4.2.3",
   "description": "A simple Node.js starter project",
   "main": "src/bot.js",
   "scripts": {
