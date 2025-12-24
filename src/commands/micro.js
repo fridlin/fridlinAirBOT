@@ -58,6 +58,8 @@ module.exports = (bot) => {
     // --------------------------------------------------
     // A.0 TIMEZONE (mandatory context)
     // --------------------------------------------------
+    await ctx.reply(UI.text(t(ctx, "calculating_timezone")));
+
     let timezone;
     try {
       timezone = tzlookup(latitude, longitude);

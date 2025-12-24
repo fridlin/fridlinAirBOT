@@ -1,4 +1,9 @@
 {
+  "bot_sleeping": {
+    "title": "⏳ Bot is waking up",
+    "text": "The bot was temporarily inactive. Please try again in a few seconds."
+  },
+
   "language": {
     "title": "Choose language",
     "title_ru": "Выберите язык"
