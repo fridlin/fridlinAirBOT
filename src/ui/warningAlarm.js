@@ -12,6 +12,16 @@
  * This file acts as a UX "skin" over already formatted text/blocks.
  */
 
+/**
+ * @deprecated
+ * Legacy warning/alarm UX renderer.
+ *
+ * This file belongs to pre-canonical UX architecture.
+ * It will be replaced by structured UX flow (alarm.ui.js, warning.ui.js).
+ *
+ * DO NOT extend.
+ */
+
 const { getRecommendations } = require("./recommendations");
 
 /**

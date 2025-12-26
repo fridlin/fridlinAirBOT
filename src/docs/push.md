@@ -2,6 +2,9 @@ git status
 node scripts/ship.js patch
 
 
+tree -a -I 'node_modules|.git'
+
+
 1️⃣ Проверка перед релизом
 git status
 
