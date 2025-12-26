@@ -1,7 +1,4 @@
 // src/micro/interpolateForecast.js
-// All comments in English, as agreed
-
-const { calculateFeelsLike } = require("../services/feelsLike");
 
 // ==================================================
 // INTERPOLATION (HOURLY → 15 MIN)
@@ -12,7 +9,7 @@ const { calculateFeelsLike } = require("../services/feelsLike");
  * Input forecast MUST be in canonical format and sorted by ts asc.
  *
  * @param {Array<Object>} hourlyForecast
- * @returns {Array<Object>} 15-min interpolated forecast
+ * @returns {Array<Object>} 15-min interpolated forecast (raw physics only)
  */
 function interpolateForecast15min(hourlyForecast) {
   console.log("[MICRO][INTERPOLATE][START]");
@@ -47,7 +44,7 @@ function interpolateForecast15min(hourlyForecast) {
       continue;
     }
 
-    // Push current hour point
+    // Push current hour point (raw)
     result.push(buildPoint(cur));
 
     // Interpolate 3 intermediate 15-min points
@@ -76,14 +73,7 @@ function isValidPoint(p) {
 function buildPoint(p) {
   return {
     ...p,
-    feelsLike: calculateFeelsLike({
-      temperature: p.temperature,
-      humidity: p.humidity,
-      windSpeed: p.windSpeed,
-      windGusts: p.windGusts,
-      clouds: p.cloudCover,
-      precipitation: p.precipitation,
-    }),
+    feelsLike: null,
   };
 }
 
@@ -93,7 +83,7 @@ function interpolateValue(a, b, ratio) {
 }
 
 function interpolatePoint(cur, next, ratio, ts) {
-  const point = {
+  return {
     ts,
 
     temperature: interpolateValue(cur.temperature, next.temperature, ratio),
@@ -111,18 +101,11 @@ function interpolatePoint(cur, next, ratio, ts) {
       next.precipitation,
       ratio,
     ),
+
+    precipitationType: null,
+
+    feelsLike: null,
   };
-
-  point.feelsLike = calculateFeelsLike({
-    temperature: point.temperature,
-    humidity: point.humidity,
-    windSpeed: point.windSpeed,
-    windGusts: point.windGusts,
-    clouds: point.cloudCover,
-    precipitation: point.precipitation,
-  });
-
-  return point;
 }
 
 module.exports = {

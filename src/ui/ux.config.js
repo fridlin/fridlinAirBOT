@@ -1,4 +1,4 @@
-// src/ui/ux.js
+// src/ui/ux.config.js
 
 /**
  * UX configuration (CSS-like).
@@ -22,12 +22,78 @@ const UX = {
   },
 
   // ===========================
+  // VISUAL LEVELS (LOUDNESS)
+  // ===========================
+
+  levels: {
+    normal: {
+      emphasis: "normal",
+    },
+    warning: {
+      emphasis: "warning",
+    },
+    alarm: {
+      emphasis: "alarm",
+    },
+  },
+
+  // ===========================
+  // TEXT SIZES (ABSTRACT)
+  // ===========================
+
+  textSize: {
+    title: "title",
+    normal: "normal",
+    small: "small",
+  },
+
+  // ===========================
+  // TEXT DENSITY (legacy buckets)
+  // ===========================
+
+  density: {
+    compact: {
+      sectionSeparator: "\n",
+    },
+    normal: {
+      sectionSeparator: "\n\n",
+    },
+    spacious: {
+      sectionSeparator: "\n\n\n",
+    },
+  },
+
+  // ===========================
+  // DENSITY PROFILES (by block)
+  // ===========================
+
+  densityProfiles: {
+    normal: {
+      sectionSeparator: "\n\n",
+    },
+    warning: {
+      sectionSeparator: "\n\n",
+    },
+    alarm: {
+      sectionSeparator: "\n",
+    },
+  },
+
+  densityByBlock: {
+    forecast: "normal",
+    warning: "warning",
+    alarm: "alarm",
+  },
+
+  // ===========================
   // HEADER
   // ===========================
 
   header: {
     icon: "🌤",
     showTimezone: true,
+    textSize: "title",
+    level: "normal",
   },
 
   // ===========================
@@ -39,6 +105,8 @@ const UX = {
     prefix: "",
     suffix: "",
     format: "HH:mm",
+    textSize: "small",
+    level: "normal",
   },
 
   // ===========================
@@ -49,6 +117,8 @@ const UX = {
     emoji: "🌡️",
     unit: "°",
     decimals: 1,
+    textSize: "normal",
+    level: "normal",
   },
 
   feelsLike: {
@@ -56,6 +126,8 @@ const UX = {
     unit: "°",
     decimals: 1,
     alwaysShow: true,
+    textSize: "small",
+    level: "normal",
   },
 
   // ===========================
@@ -66,6 +138,8 @@ const UX = {
     emoji: "💨",
     unit: "km/h",
     decimals: 0,
+    textSize: "normal",
+    level: "normal",
     trendIcons: {
       up: "↑",
       down: "↓",
@@ -81,23 +155,28 @@ const UX = {
     sun: {
       emoji: "☀️",
       label: "dry",
+      level: "normal",
     },
     cloud: {
       emoji: "☁️",
       label: "dry",
+      level: "normal",
     },
     rain: {
       emoji: "🌧️",
       label: "rain",
+      level: "warning",
     },
     storm: {
       emoji: "⛈️",
       label: "storm",
+      level: "alarm",
     },
     squallRain: {
       emoji: "☔💨",
       label: "rain + squalls",
-    }
+      level: "alarm",
+    },
   },
 
   // ===========================
@@ -107,16 +186,20 @@ const UX = {
   warning: {
     header: {
       icon: "⚠️",
+      textSize: "title",
+      level: "warning",
     },
     bullet: "•",
+    textSize: "normal",
+    level: "warning",
     order: [
       "feelslike_noticeable",
       "wind_noticeable",
       "humidity_high",
       "humidity_low",
       "rain_now",
-      "rain_future"
-    ]
+      "rain_future",
+    ],
   },
 
   // ===========================
@@ -126,15 +209,14 @@ const UX = {
   alarm: {
     header: {
       icon: "🚨",
+      textSize: "title",
+      level: "alarm",
     },
     bullet: "•",
-    order: [
-      "storm_now",
-      "storm_future",
-      "wind_strong",
-      "wind_strong_future"
-    ]
-  }
+    textSize: "normal",
+    level: "alarm",
+    order: ["storm_now", "storm_future", "wind_strong", "wind_strong_future"],
+  },
 };
 
 module.exports = UX;

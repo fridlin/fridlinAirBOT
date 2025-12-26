@@ -1,17 +1,21 @@
 // src/formatters/microForecastFormatter.js
 
-const UX = require("../ui/ux");
-
 /**
- * Formats micro forecast data into a user-facing string.
+ * Formats ONE micro forecast line.
  *
  * RULES:
- * ❌ No calculations
- * ❌ No thresholds
- * ❌ No units
- * ❌ No formatting decisions
- * ✅ Only rendering via UX config
+ * - No calculations
+ * - No thresholds
+ * - No decisions about weather severity
+ * - Uses UX config only
  */
+
+const UX = require("../ui/ux.config");
+
+function formatNumber(value, decimals) {
+  if (typeof value !== "number") return null;
+  return value.toFixed(decimals);
+}
 
 function formatMicroForecast({
   timeLabel,
@@ -21,53 +25,51 @@ function formatMicroForecast({
   windTrend,
   skyState,
 }) {
-  const sky = UX.sky[skyState] || UX.sky.cloud;
   const parts = [];
 
-  // Time
-  if (UX.time?.show && timeLabel) {
+  // -----------------------
+  // TIME
+  // -----------------------
+  if (UX.time.show && timeLabel) {
     parts.push(timeLabel);
   }
 
-  // Sky
-  parts.push(sky.emoji);
-
-  // Temperature
-  if (typeof temperature === "number") {
-    parts.push(
-      `${UX.temperature.emoji} ${temperature.toFixed(
-        UX.temperature.decimals,
-      )}${UX.temperature.unit}`,
-    );
+  // -----------------------
+  // SKY
+  // -----------------------
+  const sky = UX.sky[skyState] || UX.sky.cloud;
+  if (sky?.emoji) {
+    parts.push(sky.emoji);
   }
 
-  // Feels-like
-  if (UX.feelsLike.alwaysShow && typeof feelsLike === "number") {
-    parts.push(
-      `${UX.feelsLike.emoji} ${feelsLike.toFixed(
-        UX.feelsLike.decimals,
-      )}${UX.feelsLike.unit}`,
-    );
+  // -----------------------
+  // TEMPERATURE
+  // -----------------------
+  const t = formatNumber(temperature, UX.temperature.decimals);
+  if (t !== null) {
+    parts.push(`${UX.temperature.emoji} ${t}${UX.temperature.unit}`);
   }
 
-  // Wind
-  if (typeof windSpeed === "number") {
-    const trendIcon = UX.wind.trendIcons?.[windTrend] || "";
-    parts.push(
-      `${UX.wind.emoji} ${windSpeed.toFixed(
-        UX.wind.decimals,
-      )} ${UX.wind.unit}${trendIcon}`,
-    );
+  // -----------------------
+  // FEELS LIKE (UX-driven)
+  // -----------------------
+  const fl = formatNumber(feelsLike, UX.feelsLike.decimals);
+  if (fl !== null && UX.feelsLike.alwaysShow) {
+    parts.push(`${UX.feelsLike.emoji} ${fl}${UX.feelsLike.unit}`);
   }
 
-  // Fact label (dry / rain / storm)
-  if (sky.label) {
-    parts.push(sky.label);
+  // -----------------------
+  // WIND
+  // -----------------------
+  const w = formatNumber(windSpeed, UX.wind.decimals);
+  if (w !== null) {
+    const trendIcon =
+      UX.wind.trendIcons[windTrend] || UX.wind.trendIcons.stable;
+
+    parts.push(`${UX.wind.emoji} ${w} ${UX.wind.unit} ${trendIcon}`);
   }
 
-  return parts.join(UX.layout.itemSeparator);
+  return parts.join(" ");
 }
 
-module.exports = {
-  formatMicroForecast,
-};
+module.exports = { formatMicroForecast };

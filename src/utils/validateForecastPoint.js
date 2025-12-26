@@ -9,7 +9,9 @@ function inRange(x, min, max) {
 }
 
 function validateForecastPoint(p) {
-  if (!p || !isNum(p.ts)) return { ok: false, reason: "missing_ts" };
+  if (!p || !isNum(p.ts)) {
+    return { ok: false, reason: "missing_ts" };
+  }
 
   if (p.temperature != null && !inRange(p.temperature, -80, 80))
     return { ok: false, reason: "bad_temperature" };

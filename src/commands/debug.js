@@ -2,6 +2,10 @@
 
 module.exports = (bot) => {
   bot.command("debug", (ctx) => {
+    if (!ctx.session?.started) {
+      return ctx.reply("/start");
+    }
+
     const msg = `*🛠 DEBUG MENU*
 
 FridlinAir provides several debugging tools.
@@ -26,11 +30,6 @@ Check timezone, local clock, offset, ISO mismatch.
 
 🔹 */debug_reset*  
 Stops debug mode if something is stuck.
-
-———————————
-Usage example:  
-1) Run a debug command  
-2) Send GPS or type:  \`32.755 34.974\`
 `;
 
     return ctx.replyWithMarkdown(msg, {
@@ -52,6 +51,11 @@ Usage example:
 
   // BUTTON HANDLERS — convert buttons → commands
   bot.on("callback_query", (ctx, next) => {
+    if (!ctx.session?.started) {
+      ctx.answerCbQuery();
+      return ctx.reply("/start");
+    }
+
     const data = ctx.callbackQuery.data;
 
     if (data === "debug_cmd_micro") {

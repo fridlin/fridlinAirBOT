@@ -1,8 +1,12 @@
+// src/commands/debug_time.js
 const { setDebugState } = require("../utils/debugState");
 
 module.exports = (bot) => {
   bot.command("debug_time", (ctx) => {
-    // Activate debug mode "time"
+    if (!ctx.session?.started) {
+      return ctx.reply("/start");
+    }
+
     setDebugState(ctx.from.id, "time");
 
     ctx.reply(

@@ -1,5 +1,4 @@
-// src/config/microForecastUI.js
-
+// src/config/microForecastUX.js
 
 module.exports = {
   /**

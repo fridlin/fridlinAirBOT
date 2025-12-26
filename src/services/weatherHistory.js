@@ -4,6 +4,10 @@ const fetch = require("node-fetch");
 const { provider, providers } = require("../config/weatherProvider");
 const { validateHistoryPoint } = require("../utils/validateHistoryPoint");
 
+/**
+ * Returns RAW PHYSICS for yesterday at the same local hour.
+ * Sensitivity Layer is applied OUTSIDE.
+ */
 async function getYesterdayWeather(lat, lon, nowTs) {
   const cfg = providers?.[provider];
 
@@ -53,7 +57,6 @@ async function getYesterdayWeather(lat, lon, nowTs) {
 // ---------- Provider-specific mappers ----------
 
 async function fetchOpenMeteo(lat, lon, nowTs, baseUrl) {
-  // Target: yesterday at the same local time (UTC hour approximation)
   const yesterdayTs = nowTs - 24 * 60 * 60 * 1000;
   const date = new Date(yesterdayTs).toISOString().split("T")[0];
   const targetHour = new Date(yesterdayTs).getUTCHours();
@@ -65,8 +68,7 @@ async function fetchOpenMeteo(lat, lon, nowTs, baseUrl) {
     `&start_date=${date}` +
     `&end_date=${date}` +
     `&hourly=` +
-    `temperature_2m,apparent_temperature,relative_humidity_2m,` +
-    `cloudcover,windspeed_10m`;
+    `temperature_2m,relative_humidity_2m,cloudcover,windspeed_10m,precipitation`;
 
   const res = await fetch(url);
   if (!res.ok) {
@@ -94,13 +96,16 @@ async function fetchOpenMeteo(lat, lon, nowTs, baseUrl) {
     return null;
   }
 
-  // Canonical contract
   return {
     ts: Date.parse(data.hourly.time[idx]),
-    feelsLike: data.hourly.apparent_temperature?.[idx] ?? null,
-    windSpeed: data.hourly.windspeed_10m?.[idx] ?? null,
+    temperature: data.hourly.temperature_2m?.[idx] ?? null,
     humidity: data.hourly.relative_humidity_2m?.[idx] ?? null,
+    windSpeed: data.hourly.windspeed_10m?.[idx] ?? null,
+    windGusts: null,
     cloudCover: data.hourly.cloudcover?.[idx] ?? null,
+    precipitation: data.hourly.precipitation?.[idx] ?? null,
+    precipitationType: null,
+    feelsLike: null,
   };
 }
 

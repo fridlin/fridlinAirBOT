@@ -1,5 +1,5 @@
 // src/services/weather.js
-// All comments in English, as agreed
+
 
 const axios = require("axios");
 const { getPlaceName } = require("./geocode");

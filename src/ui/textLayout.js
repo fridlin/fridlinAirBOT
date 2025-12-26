@@ -17,6 +17,7 @@ const DOUBLE_GAP = "\n\n";
  * Big title with emoji
  */
 function title(text, emoji = "") {
+  if (typeof text !== "string") return "";
   return `${emoji ? emoji + " " : ""}${text}${DOUBLE_GAP}`;
 }
 
@@ -24,6 +25,7 @@ function title(text, emoji = "") {
  * Simple paragraph
  */
 function text(text) {
+  if (typeof text !== "string") return "";
   return `${text}${DOUBLE_GAP}`;
 }
 
@@ -31,16 +33,19 @@ function text(text) {
  * Compact paragraph (used in blocks)
  */
 function line(text) {
+  if (typeof text !== "string") return "";
   return `${text}${GAP}`;
 }
 
 /**
  * Visual block (stacked lines with spacing)
+ * Accepts strings only, silently ignores others
  */
-function block(...lines) {
+function block(...items) {
   return (
-    lines
-      .filter(Boolean)
+    items
+      .flat()
+      .filter((v) => typeof v === "string" && v.trim().length > 0)
       .map((l) => line(l))
       .join("") + DOUBLE_GAP
   );
@@ -50,11 +55,11 @@ function block(...lines) {
  * Bullet list
  */
 function list(items = []) {
-  if (!items.length) return "";
+  if (!Array.isArray(items) || items.length === 0) return "";
 
   return (
     items
-      .filter(Boolean)
+      .filter((v) => typeof v === "string" && v.trim().length > 0)
       .map((i) => `• ${i}`)
       .join(GAP) + DOUBLE_GAP
   );
@@ -71,6 +76,7 @@ function divider(char = "─", length = 12) {
  * Inline badge / label
  */
 function badge(text) {
+  if (typeof text !== "string") return "";
   return `[ ${text} ]`;
 }
 

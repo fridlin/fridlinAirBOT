@@ -1,5 +1,4 @@
-// src/services/feelsLike.js
-// All comments in English, as agreed
+// src/micro/calculateFeelsLike.js
 
 /**
  * Calculate perceived (feels-like) temperature based on approved inputs.

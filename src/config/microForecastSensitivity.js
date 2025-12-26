@@ -1,4 +1,4 @@
-// src/config/microForecast.js
+// src/config/microForecastSensitivity.js
 
 module.exports = {
   HOURS_AHEAD: 3,

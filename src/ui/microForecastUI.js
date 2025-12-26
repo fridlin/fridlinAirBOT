@@ -1,80 +1,79 @@
 // src/ui/microForecastUI.js
 
+const UX = require("./ux.config");
+const { buildOutput } = require("./outputScenario");
+
 /**
- * Visual UI layer for Micro Forecast
- * Acts as "CSS for micro forecast text"
+ * Micro Forecast UI adapter.
  *
- * CONTRACT:
- * - Receives READY strings
- * - NEVER formats forecast lines
- * - NEVER inserts emojis or units
- * - ONLY groups and spaces text
- * - FAILS LOUDLY on invalid input
+ * ROLE:
+ * - Validate prepared strings
+ * - Assemble UI blocks
+ * - Delegate final rendering to outputScenario
+ *
+ * RULES:
+ * - No calculations
+ * - No translations
+ * - No emojis logic
+ * - Strings in → string out
  */
 
-const UI = require("./textLayout");
-
-/**
- * @param {Object} params
- * @param {Object=} params.header   // optional
- * @param {string=} params.header.title
- * @param {string=} params.header.subtitle
- * @param {string=} params.header.areaNote
- * @param {string=} params.header.timezone
- * @param {string[]} params.lines   // REQUIRED
- */
-function renderMicroForecastUI({ header, lines }) {
-  // ===========================
-  // HARD VALIDATION — FAIL LOUD
-  // ===========================
-  if (!Array.isArray(lines)) {
-    console.error("[UI][MICRO][FATAL] lines is not array:", lines);
-    return null;
-  }
-
-  if (lines.length === 0) {
-    console.error("[UI][MICRO][FATAL] lines array is empty");
+function renderMicroForecastUI({
+  header,
+  lines,
+  warning,
+  alarm,
+  options = {},
+}) {
+  // ---------------------------
+  // HARD VALIDATION
+  // ---------------------------
+  if (!Array.isArray(lines) || lines.length === 0) {
+    console.error("[UI][MICRO][FAIL] lines must be non-empty string array");
     return null;
   }
 
   if (!lines.every((l) => typeof l === "string")) {
-    console.error("[UI][MICRO][FATAL] non-string line detected:", lines);
+    console.error("[UI][MICRO][FAIL] non-string line detected", lines);
     return null;
   }
 
-  // ===========================
-  // RENDER
-  // ===========================
-  let text = "";
+  // ---------------------------
+  // BUILD BLOCKS
+  // ---------------------------
+  const blocks = {};
 
-  // Header is OPTIONAL
-  if (header) {
-    if (typeof header !== "object") {
-      console.error("[UI][MICRO][FATAL] header is not object:", header);
-      return null;
-    }
+  if (header?.title) blocks.header = header.title;
+  if (header?.subtitle) blocks.subheader = header.subtitle;
+  if (header?.areaNote) blocks.note = header.areaNote;
 
-    if (header.title) {
-      text += UI.title(header.title, "🌤");
-    }
+  blocks.forecast = lines;
 
-    if (header.subtitle || header.areaNote || header.timezone) {
-      text += UI.block(
-        header.subtitle,
-        header.areaNote,
-        header.timezone ? `Часовой пояс: ${header.timezone}` : null,
-      );
-    }
-
-    text += UI.divider();
+  if (warning?.items?.length) {
+    blocks.warning = {
+      title: warning.title || "",
+      items: warning.items,
+    };
   }
 
-  // Timeline
-  for (const line of lines) {
-    text += UI.line(line);
+  if (alarm?.items?.length) {
+    blocks.alarm = {
+      title: alarm.title || "",
+      items: alarm.items,
+    };
   }
 
-  return text;
+  // ---------------------------
+  // OUTPUT SCENARIO
+  // ---------------------------
+  return buildOutput({
+    blocks,
+    options: {
+      ...options,
+      density: alarm ? "compact" : "normal",
+    },
+    ux: UX,
+  });
 }
 
 module.exports = {
